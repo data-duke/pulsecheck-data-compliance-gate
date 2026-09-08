@@ -1,0 +1,30 @@
+{
+  "name": "@pulsecheck/data-compliance-gate-action",
+  "version": "1.0.0",
+  "private": true,
+  "description": "PulseCheck Data Compliance Gate \u2014 a dumb-sensor GitHub Action that scans PR diffs for GDPR/PII findings client-side and reports a masked verdict back to PulseCheck.",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "ncc build src/index.ts -o dist --license licenses.txt",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@actions/core": "^3.0.1",
+    "@actions/github": "^9.1.1",
+    "ibantools": "^4.5.4",
+    "card-validator": "^10.0.4"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "vitest": "^2.0.0",
+    "@types/node": "^20.0.0",
+    "@vercel/ncc": "^0.38.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/data-duke/pulsecheck-data-compliance-gate.git"
+  },
+  "license": "MIT"
+}

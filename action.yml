@@ -1,0 +1,38 @@
+name: 'PulseCheck Data Compliance Gate'
+description: >-
+  Detective GDPR gate. Scans a pull request's description + diff for real
+  personal-data risks INSIDE your CI, masks findings locally, and reports a
+  verdict to PulseCheck. Raw diff and PII never leave the runner.
+author: 'Data Duke'
+branding:
+  icon: 'shield'
+  color: 'blue'
+
+inputs:
+  pulsecheck-token:
+    description: >-
+      PulseCheck CI token (ci_live_*). Store it as a repo/org secret
+      (e.g. PULSECHECK_TOKEN). With no token the action is inert.
+    required: true
+  pulsecheck-url:
+    description: 'PulseCheck base URL.'
+    required: false
+    default: 'https://nmvlxonedqnejdevrchx.supabase.co'
+  github-token:
+    description: 'Token used to read the PR diff and publish the check run.'
+    required: true
+    default: ${{ github.token }}
+  diff-cap-bytes:
+    description: 'Max diff bytes to scan; larger diffs are truncated and floored to needs_review.'
+    required: false
+    default: '5000000'
+
+outputs:
+  verdict:
+    description: 'pass | fail | needs_review'
+  findings-count:
+    description: 'Number of masked findings.'
+
+runs:
+  using: 'node20'
+  main: 'dist/index.js'
