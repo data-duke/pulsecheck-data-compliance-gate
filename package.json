@@ -22,9 +22,9 @@
     "@types/node": "^20.0.0",
     "@vercel/ncc": "^0.38.1"
   },
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/data-duke/pulsecheck-data-compliance-gate.git"
-  },
-  "license": "MIT"
+  }
 }

@@ -28,7 +28,7 @@ on:
 permissions:
   contents: read
   pull-requests: read
-  checks: write          # required to publish the check run
+  checks: write # required to publish the check run
 jobs:
   data-compliance:
     runs-on: ubuntu-latest
@@ -113,10 +113,21 @@ PulseCheck's server-side ruleset mapping, which is not part of the action and
 cannot run standalone, so it lives with that mapping in our product
 repository.
 
+This package is **not published to npm** — `package.json` carries
+`"private": true` so that it cannot be, deliberately. A GitHub Action is
+consumed through `uses:`, not `npm install`; the flag stops an accidental
+publish and does not mean anything here is withheld.
+
 ## Versioning
 
-Pin the major tag — `@v1` — and you receive fixes and new detections without
-action on your part. The `v1` tag moves; breaking changes ship as `v2`.
+Pin the major ref — `@v1` — and you receive fixes and new detections without
+action on your part. The `v1` ref moves as we release; breaking changes ship as
+`v2`.
+
+`v1` is currently a **branch**, not a tag, so it will not appear in this
+repository's tag list — GitHub Actions resolves `@v1` against either, and
+pinning it works the same way. If you would rather pin something immutable, use
+a full release tag (`@v1.0.0`) and update it deliberately.
 
 Avoid pinning `@main`: it is our development branch and carries no stability
 promise.
