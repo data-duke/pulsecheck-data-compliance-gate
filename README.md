@@ -126,8 +126,26 @@ action on your part. The `v1` ref moves as we release; breaking changes ship as
 
 `v1` is currently a **branch**, not a tag, so it will not appear in this
 repository's tag list — GitHub Actions resolves `@v1` against either, and
-pinning it works the same way. If you would rather pin something immutable, use
-a full release tag (`@v1.0.0`) and update it deliberately.
+pinning it works the same way.
+
+If you would rather pin something **immutable**, pin a commit SHA — the
+strongest supply-chain pin GitHub offers, and one that can never move:
+
+```bash
+# the SHA currently behind @v1, which you can then review and pin
+git ls-remote https://github.com/data-duke/pulsecheck-data-compliance-gate v1
+```
+
+```yaml
+- uses: data-duke/pulsecheck-data-compliance-gate@<the SHA you reviewed>
+```
+
+Deliberately no example SHA here: a hardcoded one in documentation goes stale
+and would quietly pin you to an old scanner. Note also that no `vX.Y.Z` release
+tags are published yet — do not pin one, it would fail to resolve. (Which is
+precisely the failure this action's own history is a lesson in: an install
+instruction pointing at something that does not resolve is worse than no
+instruction, because it looks like it should work.)
 
 Avoid pinning `@main`: it is our development branch and carries no stability
 promise.

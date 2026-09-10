@@ -16,12 +16,30 @@ function digitsOnly(value: string): string {
 
 /**
  * IBAN — delegates to ibantools' spec-aware validator (country length +
- * mod-97 check). Whitespace is tolerated; ibantools normalises internally,
- * but we strip spaces defensively so "AT61 1904 ..." validates.
+ * mod-97 check).
+ *
+ * BOTH separators an IBAN is written with are stripped, spaces AND HYPHENS.
+ * Stripping only spaces meant `DE89-3704-0044-0532-0130-00` — an ordinary way to
+ * write one — validated as `false` and escaped the gate ENTIRELY: verdict
+ * `pass`, zero findings, while the compact and space-grouped spellings of the
+ * same IBAN both hard-blocked on `dc-pii-iban`. A real PII leak, not noise.
+ *
+ * That example is one of the two IBANs in `STATIC_ALLOWLIST`, deliberately. Any
+ * other real IBAN written out here is now a BLOCKING finding on the very PR that
+ * documents the fix — this change is what makes the hyphenated spelling
+ * detectable, so it caught its own author on four files. Writing an allowlisted
+ * one keeps the example concrete and also exercises the grouping-insensitive
+ * allowlist compare that makes it inert.
+ *
+ * Every other part of the pipeline had already assumed this. `checksumCandidates`
+ * length-filters on `run.replace(/[\s-]/g, '')`, and `isAllowlisted`'s
+ * `groupingInsensitive` compares on `[\s-]`-stripped values — its comment even
+ * asserted "the validator already strips whitespace and hyphens", which was not
+ * true until now. This is the validator catching up with its own contract.
  */
 export function isValidIban(value: string): boolean {
   if (typeof value !== 'string') return false;
-  const normalised = value.replace(/\s+/g, '').toUpperCase();
+  const normalised = value.replace(/[\s-]/g, '').toUpperCase();
   return isValidIBAN(normalised);
 }
 

@@ -387,10 +387,12 @@ describe('SEC8 — checksum identifiers inside prose', () => {
   /**
    * Assembled at runtime, deliberately. A literal space-grouped IBAN written out on
    * a diff line is itself a blocking finding under the SHIPPED ruleset — the gate
-   * blocked this very PR for exactly that — and the allowlist grouping fix in this
-   * same commit cannot rescue it here, because `.github/workflows/data-compliance.yml`
-   * pins the action `@main`, so this PR's own gate run uses main's bundle, not this
-   * branch's. The quotes and commas break the scanner's candidate run, so the value
+   * blocked this very PR for exactly that. (This used to add that the action was
+   * pinned `@main`, so a branch was graded by main's bundle. STALE:
+   * `data-compliance.yml` now references it by LOCAL path, so a PR is graded by its
+   * OWN committed dist/index.js. The conclusion is unchanged and if anything
+   * stronger — a branch that WIDENS detection blocks on its own new literals.)
+   * The quotes and commas break the scanner's candidate run, so the value
    * only ever exists at runtime while the test still exercises a real mod-97-valid
    * grouped identifier — which is the whole point of the contiguous-run search.
    */
@@ -416,6 +418,38 @@ describe('SEC8 — checksum identifiers inside prose', () => {
 
   it('still catches a space-grouped identifier on its own (regression guard)', () => {
     expect(hits(GROUPED)).toBe(1);
+  });
+
+  /**
+   * HYPHEN-grouped, assembled at runtime for the same reason `GROUPED` is.
+   *
+   * This spelling escaped the gate ENTIRELY until v2.184.2 — verdict `pass`, zero
+   * findings — while the compact and space-grouped spellings of the same IBAN both
+   * hard-blocked. `isValidIban` stripped only whitespace, even though the candidate
+   * length filter and the allowlist's `groupingInsensitive` compare had both always
+   * stripped `[\s-]`, and the allowlist's own comment asserted the validator did too.
+   */
+  const HYPHENATED = ['AT61', '1904', '3002', '3457', '3201'].join('-');
+
+  it('catches a HYPHEN-grouped identifier — it used to escape entirely', () => {
+    expect(hits(HYPHENATED)).toBe(1);
+  });
+
+  it('catches a hyphen-grouped identifier inside a sentence', () => {
+    expect(hits(`Please pay ${HYPHENATED} by Friday.`)).toBe(1);
+  });
+
+  /**
+   * A SHORT-BBAN country (LB), whose numeric run is 6-10 digits and so fits
+   * entirely inside what `DATE_LIKE_RE` can cover. The date guard suppressed
+   * these, silently cancelling the hyphen fix directly above for LB/UA/GR/AD/CH/
+   * LI/TR/AL/CY — `dc-pii-iban` is `block` with no `require_context`, so that was
+   * a straight hard-block bypass, not a downgrade.
+   */
+  const SHORT_BBAN = ['LB3812', '3', '4ABCDEFGHIJKLMNOPQRST'].join('-');
+
+  it('catches a short-BBAN IBAN whose digits fit inside a date shape', () => {
+    expect(hits(`const account = "${SHORT_BBAN}";`)).toBe(1);
   });
 
   it('does not invent a finding from ordinary prose', () => {
@@ -1044,5 +1078,181 @@ describe('code review follow-ups (round 2)', () => {
     expect(warning).toContain('café');
     expect(warning).toContain('файл');
     expect(warning).toMatch(/`src\/café\/файл\.ts`/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// A DATE IS NOT AN IDENTIFIER.
+//
+// `CHECKSUM_CANDIDATE_RE` allows digits, letters, spaces and hyphens but NOT
+// `:`, so on an ISO-8601 timestamp the match stops dead at the first colon:
+// `YYYY-MM-DDTHH:MM:SSZ` yields the candidate `YYYY-MM-DDTHH`. Strip the
+// punctuation and that is TEN DIGITS — exactly an SVNR's length — and roughly
+// one such fragment in 26 satisfies both the mod-11 check digit and the
+// embedded-DDMMYY rule, because the slice reads the timestamp's month as the
+// day, its day as the month and its hour as the year.
+//
+// So the scanner manufactures an identifier that never appeared in the source
+// text and reports it. Measured over a corpus of 6048 ordinary lines carrying
+// an ISO timestamp (`created_at:`, an INSERT, a JSON field), 3.9% produced a
+// false finding, every one of them an `svnr:YYYY-MM-DDTHH` fragment. The FULL
+// timestamp is clean — 17 digits fails the length check — which is the tell
+// that the defect is in candidate extraction, not in the validator.
+//
+// Non-blocking (`require_context` downgrades block->review when no PII keyword
+// is nearby) but it still floors the verdict to needs_review, so a seed file of
+// timestamps reports as "needs review" forever with nothing to review.
+// ---------------------------------------------------------------------------
+describe('checksum candidates — a date fragment is not an identifier', () => {
+  const p2 = (n: number) => String(n).padStart(2, '0');
+
+  /**
+   * Search for a real timestamp whose truncated `YYYY-MM-DDTHH` digits satisfy
+   * the SVNR checksum, rather than hardcoding one.
+   *
+   * Computed for two reasons. It keeps a checksum-valid identifier out of the repo
+   * this gate scans — `data-compliance.yml` references the action by LOCAL path, so
+   * a PR is graded by its OWN committed bundle and a literal would block it. And it
+   * pins the test to the collision CLASS instead of one lucky instance: if the
+   * validator's shape ever changes, this throws instead of silently passing.
+   */
+  function collidingTimestamp(): { date: string; hour: string } {
+    for (let mo = 1; mo <= 12; mo++) {
+      for (let d = 1; d <= 28; d++) {
+        for (let h = 0; h < 24; h++) {
+          const date = `2026-${p2(mo)}-${p2(d)}`;
+          const hour = p2(h);
+          if (isValidSvnr(`${date}T${hour}`)) return { date, hour };
+        }
+      }
+    }
+    throw new Error('no colliding timestamp found — the SVNR validator changed shape');
+  }
+
+  /** A real SVNR, written the way one actually is: 10 contiguous digits. */
+  function realSvnr(): string {
+    for (let n = 100; n < 1000; n++) {
+      for (let c = 0; c < 10; c++) {
+        const candidate = `${n}${c}${'010180'}`;
+        if (isValidSvnr(candidate)) return candidate;
+      }
+    }
+    throw new Error('no valid SVNR vector found — the validator changed shape');
+  }
+
+  const weakChecksum: Rule = {
+    id: 'dc-pii-weak-checksum',
+    name: 'weak-checksum PII',
+    gdpr_article: ['Art 5(1)(c)', 'Art 32'],
+    action: 'block',
+    tier: 1,
+    detect: {
+      method: 'checksum',
+      target: 'diff',
+      diff_side: 'added',
+      validator: ['svnr', 'steuer_id', 'credit_card'],
+      allowlist: 'synthetic',
+      require_context: '(?i)(svnr|sozialversicherung|steuer-?id|tax-?id|iban|card|kreditkarte)',
+      mask: 'SVNR / Steuer-ID / card number (masked)',
+    },
+  };
+  const hits = (line: string) =>
+    scan(ruleset([weakChecksum]), { diff: fileDiff('supabase/seeds/e2e_orders.sql', [line]) }).findings;
+
+  it('the collision is real — the premise of every case below', () => {
+    const { date, hour } = collidingTimestamp();
+    // The truncated fragment validates...
+    expect(isValidSvnr(`${date}T${hour}`)).toBe(true);
+    // ...while the full timestamp does not, because 17 digits is not 10.
+    expect(isValidSvnr(`${date}T${hour}:00:00Z`)).toBe(false);
+  });
+
+  it('does not report an ISO timestamp as an SVNR', () => {
+    const { date, hour } = collidingTimestamp();
+    expect(hits(`  created_at: '${date}T${hour}:00:00Z',`)).toEqual([]);
+  });
+
+  it('does not report the space-separated timestamp form either', () => {
+    const { date, hour } = collidingTimestamp();
+    // `CHECKSUM_CANDIDATE_RE` includes the space, so this cuts at the colon the
+    // same way and yields the identical ten digits.
+    expect(hits(`INSERT INTO events (at) VALUES ('${date} ${hour}:00:00');`)).toEqual([]);
+  });
+
+  it('does not report a bare calendar date', () => {
+    const { date } = collidingTimestamp();
+    expect(hits(`  effective_from: '${date}',`)).toEqual([]);
+  });
+
+  it('does not report a date padded across an aligned column', () => {
+    // Still suppressed: the aligned cell IS cut short by `:00:00`, so the
+    // truncation evidence is present.
+    const { date, hour } = collidingTimestamp();
+    expect(hits(`| ${date}  ${hour}:00:00 | ok |`)).toEqual([]);
+  });
+
+  it('DOES report a dated filename — no truncation evidence, so it fails safe', () => {
+    // Deliberate, and the inverse of what an earlier cut of this guard did.
+    // `backup-<date>-<hh>.sql` is not cut short by a time separator, so nothing
+    // proves it is a timestamp rather than a ten-digit identifier wearing date
+    // punctuation — which is exactly the shape a real SVNR takes. Suppressing it
+    // is what opened the bypass below. A little residual noise on dated filenames
+    // is the price, and it is the right way round for a security control.
+    const { date, hour } = collidingTimestamp();
+    expect(hits(`  path: 'backup-${date}-${hour}.sql',`)).toHaveLength(1);
+  });
+
+  /**
+   * A real SVNR whose 4-2-2-2 layout ALSO parses as a valid calendar date + hour —
+   * the hardest case, and the one the component sanity-check alone cannot catch.
+   * Reading `SSSC-DD-MM-YY` as a date makes the birth DAY the month (so it must be
+   * <= 12) and the birth YEAR the hour (so it must be <= 23). Searched, not written.
+   */
+  function svnrThatAlsoReadsAsADate(): string {
+    for (let n = 100; n < 1000; n++) {
+      for (let c = 0; c < 10; c++) {
+        for (let bd = 1; bd <= 12; bd++) {
+          for (let bm = 1; bm <= 12; bm++) {
+            for (let by = 0; by <= 23; by++) {
+              const cand = `${n}${c}${p2(bd)}${p2(bm)}${p2(by)}`;
+              if (cand.length === 10 && isValidSvnr(cand)) return cand;
+            }
+          }
+        }
+      }
+    }
+    throw new Error('no SVNR found whose 4-2-2-2 layout is also a valid date');
+  }
+  const four222 = (v: string, sep: string) =>
+    `${v.slice(0, 4)}-${v.slice(4, 6)}-${v.slice(6, 8)}${sep}${v.slice(8, 10)}`;
+
+  // BYPASS REGRESSION. `DATE_LIKE_RE` covers at most 4+2+2+2 = ten digits and an
+  // SVNR is exactly ten, so a digits-only "is it a date" test suppressed EVERY
+  // SVNR written in date punctuation — 48 of 48 valid vectors went from a
+  // merge-blocking `fail` to a clean `pass`. These three layouts are that bypass.
+  it.each(['-', ' ', 'T'])(
+    'STILL reports an SVNR written 4-2-2-2 with %j — the bypass must stay closed',
+    (sep) => {
+      expect(hits(`INSERT INTO patients (svnr) VALUES ('${four222(realSvnr(), sep)}');`))
+        .toHaveLength(1);
+    },
+  );
+
+  it('STILL reports one whose date reading is entirely valid', () => {
+    // Component validation cannot save this one — only the truncation evidence can.
+    expect(hits(`INSERT INTO patients (svnr) VALUES ('${four222(svnrThatAlsoReadsAsADate(), '-')}');`))
+      .toHaveLength(1);
+  });
+
+  it('STILL reports a real SVNR — the guard must not disarm the rule', () => {
+    expect(hits(`const svnr = '${realSvnr()}';`)).toHaveLength(1);
+  });
+
+  it('STILL reports a real identifier sharing a line with a timestamp', () => {
+    const { date, hour } = collidingTimestamp();
+    // The guard keys on whether the candidate's digits come ENTIRELY from the
+    // date. Here they do not, so the rule must still fire on the SVNR.
+    expect(hits(`INSERT INTO p (svnr, at) VALUES ('${realSvnr()}', '${date}T${hour}:00:00Z');`))
+      .toHaveLength(1);
   });
 });

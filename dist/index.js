@@ -39585,13 +39585,31 @@ function digitsOnly(value) {
 }
 /**
  * IBAN — delegates to ibantools' spec-aware validator (country length +
- * mod-97 check). Whitespace is tolerated; ibantools normalises internally,
- * but we strip spaces defensively so "AT61 1904 ..." validates.
+ * mod-97 check).
+ *
+ * BOTH separators an IBAN is written with are stripped, spaces AND HYPHENS.
+ * Stripping only spaces meant `DE89-3704-0044-0532-0130-00` — an ordinary way to
+ * write one — validated as `false` and escaped the gate ENTIRELY: verdict
+ * `pass`, zero findings, while the compact and space-grouped spellings of the
+ * same IBAN both hard-blocked on `dc-pii-iban`. A real PII leak, not noise.
+ *
+ * That example is one of the two IBANs in `STATIC_ALLOWLIST`, deliberately. Any
+ * other real IBAN written out here is now a BLOCKING finding on the very PR that
+ * documents the fix — this change is what makes the hyphenated spelling
+ * detectable, so it caught its own author on four files. Writing an allowlisted
+ * one keeps the example concrete and also exercises the grouping-insensitive
+ * allowlist compare that makes it inert.
+ *
+ * Every other part of the pipeline had already assumed this. `checksumCandidates`
+ * length-filters on `run.replace(/[\s-]/g, '')`, and `isAllowlisted`'s
+ * `groupingInsensitive` compares on `[\s-]`-stripped values — its comment even
+ * asserted "the validator already strips whitespace and hyphens", which was not
+ * true until now. This is the validator catching up with its own contract.
  */
 function isValidIban(value) {
     if (typeof value !== 'string')
         return false;
-    const normalised = value.replace(/\s+/g, '').toUpperCase();
+    const normalised = value.replace(/[\s-]/g, '').toUpperCase();
     return isValidIBAN(normalised);
 }
 /**
@@ -40384,7 +40402,7 @@ function evaluatePrDescription(rule, prDescription, allowlist) {
         if (rule.detect.allowlist === 'synthetic' && isAllowlisted(value, allowlist)) {
             continue;
         }
-        const { outcome: validatorHit, matched } = applyValidators(rule, value);
+        const { outcome: validatorHit, matched } = applyValidators(rule, value, cutShortByTime(body, m.index + value.length));
         if (validatorHit === 'rejected')
             continue;
         // Judge the allowlist against what actually validated, not the whole match.
@@ -40586,7 +40604,7 @@ function evaluateLinePattern(rule, parsed, allowlist) {
             if (rule.detect.allowlist === 'synthetic' && isAllowlisted(value, allowlist)) {
                 continue;
             }
-            const { outcome: validatorHit, matched } = applyValidators(rule, value);
+            const { outcome: validatorHit, matched } = applyValidators(rule, value, cutShortByTime(text, m.index + value.length));
             if (validatorHit === 'rejected')
                 continue;
             // Judge the allowlist against what actually validated, not the whole match.
@@ -40656,8 +40674,77 @@ function countDigits(value) {
     }
     return n;
 }
-function* checksumCandidates(value) {
-    yield value;
+/**
+ * A calendar date or timestamp, captured so the parts can be sanity-checked.
+ *
+ * `/` and `.` are kept in the date positions even though `CHECKSUM_CANDIDATE_RE`
+ * cannot emit them: a checksum rule may declare its OWN `detect.pattern`, which
+ * replaces that regex entirely (see the `compile(rule.detect.pattern) ??`
+ * fallback), so they are reachable through an org-authored rule.
+ *
+ * EVERY illustrative date and identifier in the comments below is a PLACEHOLDER,
+ * and that is not squeamishness. Roughly one date in 26 written out in full is
+ * itself a checksum-valid SVNR, so a comment explaining the false positive
+ * becomes one; and `data-compliance.yml` references this action by LOCAL path, so
+ * a PR is graded by its own committed bundle — a branch that WIDENS detection
+ * blocks on its own new literals. Both happened on this very change: two dates,
+ * then a real IBAN across four files. Where a concrete IBAN genuinely helps, use
+ * one from `STATIC_ALLOWLIST`.
+ */
+const DATE_LIKE_RE = /(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})(?:[T\s-]+(\d{1,2}))?/;
+/** Days in a month, century-agnostic on the leap year (accepts 29 Feb). */
+function isRealYmd(mm, dd) {
+    if (mm < 1 || mm > 12)
+        return false;
+    if (dd < 1 || dd > 31)
+        return false;
+    return dd <= new Date(2000, mm, 0).getDate() || (mm === 2 && dd === 29);
+}
+/**
+ * True when the candidate is nothing but a REAL calendar date.
+ *
+ * Digit equality alone is not enough, and getting that wrong was a HIGH-severity
+ * detection bypass rather than a cosmetic slip. `DATE_LIKE_RE` can cover at most
+ * 4+2+2+2 = TEN digits, an Austrian SVNR is EXACTLY ten, and `isValidSvnr` strips
+ * separators before checking — so every SVNR written `SSSC-DD-MM-YY` had all of its
+ * digits "accounted for by a date" and was skipped outright. Measured against the
+ * shipped ruleset: 48 of 48 valid SVNRs went from a merge-blocking `fail` to a clean
+ * `pass` in the 4-2-2-2, 4-2-2␠2 and 4-2-2T2 layouts, and short-BBAN IBANs (LB, UA,
+ * GR, AD…) were suppressed too, silently cancelling this same release's IBAN fix.
+ * A gate that hides the identifier it exists to catch is worse than the noise it
+ * was tidying, so the components are now validated as an actual date.
+ */
+function isDateDerived(candidate) {
+    const match = DATE_LIKE_RE.exec(candidate);
+    if (!match)
+        return false;
+    if (match[0].replace(/\D/g, '') !== candidate.replace(/\D/g, ''))
+        return false;
+    if (!isRealYmd(Number(match[2]), Number(match[3])))
+        return false;
+    return match[4] === undefined || Number(match[4]) <= 23;
+}
+/**
+ * Was this match CUT SHORT by a time separator in the source line?
+ *
+ * This is the positive evidence that a candidate is a timestamp fragment, and it
+ * is the condition that makes suppression safe. The original defect was
+ * TRUNCATION — `CHECKSUM_CANDIDATE_RE` has no `:`, so a timestamp's match stops
+ * at the first one — which is a property of the SURROUNDING LINE, not of the
+ * candidate in isolation. Without it the scanner cannot tell a fragment of
+ * `…T03:04:05Z` from a standalone ten-digit identifier that merely wears date
+ * punctuation, and a security control resolving that ambiguity by staying SILENT
+ * is the wrong way round: ambiguity must fail towards reporting.
+ */
+function cutShortByTime(text, matchEnd) {
+    return text.charCodeAt(matchEnd) === 58 /* ':' */
+        && text.charCodeAt(matchEnd + 1) >= 48
+        && text.charCodeAt(matchEnd + 1) <= 57;
+}
+function* checksumCandidates(value, cutShort) {
+    // `cutShort` false => nothing is ever skipped, which is the fail-safe default.
+    if (!(cutShort && isDateDerived(value)))
+        yield value;
     // Cheapest exit first: if the WHOLE value carries fewer than two digits, no
     // substring of it can either, so there is nothing to look inside for. This is
     // what keeps prose-heavy diffs cheap — without it we still split and build runs
@@ -40690,6 +40777,8 @@ function* checksumCandidates(value) {
             if (seen.has(run))
                 continue;
             seen.add(run);
+            if (cutShort && isDateDerived(run))
+                continue;
             yield run;
         }
     }
@@ -40704,11 +40793,11 @@ function* checksumCandidates(value) {
  * `allowlist: 'synthetic'` would report a finding on an explicitly allowlisted
  * value the moment it appeared inside a sentence.
  */
-function applyValidators(rule, value) {
+function applyValidators(rule, value, cutShort) {
     const validators = rule.detect.validator;
     if (!validators || validators.length === 0)
         return { outcome: 'none', matched: null };
-    for (const candidate of checksumCandidates(value)) {
+    for (const candidate of checksumCandidates(value, cutShort)) {
         if (runValidators(validators, candidate))
             return { outcome: 'passed', matched: candidate };
     }
