@@ -77,6 +77,30 @@ export function maskFinding(
   return evidence;
 }
 
+/** Separates the mask part from the location part of masked evidence (see maskFinding). */
+const EVIDENCE_SEPARATOR = ' @ ';
+
+/**
+ * Break every run of 8 or more digits IN THE LOCATION PART of masked evidence into groups of four joined by
+ * U+00B7, e.g. `m @ supabase/migrations/20261003090000_x.sql` -> `m @ supabase/migrations/2026·1003·0900·00_x.sql`.
+ *
+ * Masked evidence is `<mask> @ <location>`. ci-scan-result refuses any stored string holding an 8+ digit run
+ * (looksUnmasked: such a run reads as a raw IBAN, phone number or card), and the location carries the FILE PATH,
+ * so one finding in a timestamped file (every Supabase migration) made an older server reject the whole post.
+ *
+ * ONLY the part after the FIRST ` @ ` is transformed. The mask part is never touched: should it ever carry an
+ * unmasked digit run (a scanner bug), it must reach the server as it is so the server backstop can refuse it,
+ * instead of being disguised as a grouped run. Evidence with no ` @ ` has no location and is returned unchanged.
+ * Applied to the POSTED evidence only (report.ts): the check run keeps the real path. Every digit is kept, so two
+ * paths never collapse into one.
+ */
+export function groupLongDigitRuns(value: string): string {
+  const at = value.indexOf(EVIDENCE_SEPARATOR);
+  if (at < 0) return value;
+  const cut = at + EVIDENCE_SEPARATOR.length;
+  return value.slice(0, cut) + value.slice(cut).replace(/\d{8,}/g, (run) => run.replace(/(\d{4})(?=\d)/g, '$1\u00b7'));
+}
+
 /**
  * Strip newlines/control chars and clamp length so a crafted label or path can
  * neither break the markdown summary nor smuggle large amounts of raw text.

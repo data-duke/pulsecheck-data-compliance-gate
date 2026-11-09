@@ -1,0 +1,34 @@
+{
+  "name": "@pulsecheck/gate-cli",
+  "version": "0.1.1",
+  "description": "PulseCheck Data Compliance Gate for GitLab merge request pipelines: scans the diff on your runner, reports a masked verdict, writes a GitLab Code Quality report. No source code leaves the runner.",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "pulsecheck-gate": "dist/index.js"
+  },
+  "files": [
+    "dist/",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "gitlab",
+    "gitlab-ci",
+    "compliance",
+    "gdpr",
+    "eu-ai-act",
+    "code-quality"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/data-duke/pulsecheck-data-compliance-gate.git",
+    "directory": "cli"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

@@ -30203,6 +30203,36 @@ function qstring(str) {
 /******/ 	};
 /******/ })();
 /******/ 
+/******/ /* webpack/runtime/create fake namespace object */
+/******/ (() => {
+/******/ 	var getProto = Object.getPrototypeOf ? (obj) => (Object.getPrototypeOf(obj)) : (obj) => (obj.__proto__);
+/******/ 	var leafPrototypes;
+/******/ 	// create a fake namespace object
+/******/ 	// mode & 1: value is a module id, require it
+/******/ 	// mode & 2: merge all properties of value into the ns
+/******/ 	// mode & 4: return value when already ns object
+/******/ 	// mode & 16: return value when it's Promise-like
+/******/ 	// mode & 8|1: behave like require
+/******/ 	__nccwpck_require__.t = function(value, mode) {
+/******/ 		if(mode & 1) value = this(value);
+/******/ 		if(mode & 8) return value;
+/******/ 		if(typeof value === 'object' && value) {
+/******/ 			if((mode & 4) && value.__esModule) return value;
+/******/ 			if((mode & 16) && typeof value.then === 'function') return value;
+/******/ 		}
+/******/ 		var ns = Object.create(null);
+/******/ 		__nccwpck_require__.r(ns);
+/******/ 		var def = {};
+/******/ 		leafPrototypes = leafPrototypes || [null, getProto({}), getProto([]), getProto(getProto)];
+/******/ 		for(var current = mode & 2 && value; typeof current == 'object' && !~leafPrototypes.indexOf(current); current = getProto(current)) {
+/******/ 			Object.getOwnPropertyNames(current).forEach((key) => (def[key] = () => (value[key])));
+/******/ 		}
+/******/ 		def['default'] = () => (value);
+/******/ 		__nccwpck_require__.d(ns, def);
+/******/ 		return ns;
+/******/ 	};
+/******/ })();
+/******/ 
 /******/ /* webpack/runtime/define property getters */
 /******/ (() => {
 /******/ 	// define getter functions for harmony exports
@@ -30220,12 +30250,69 @@ function qstring(str) {
 /******/ 	__nccwpck_require__.o = (obj, prop) => (Object.prototype.hasOwnProperty.call(obj, prop))
 /******/ })();
 /******/ 
+/******/ /* webpack/runtime/make namespace object */
+/******/ (() => {
+/******/ 	// define __esModule on exports
+/******/ 	__nccwpck_require__.r = (exports) => {
+/******/ 		if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
+/******/ 			Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
+/******/ 		}
+/******/ 		Object.defineProperty(exports, '__esModule', { value: true });
+/******/ 	};
+/******/ })();
+/******/ 
 /******/ /* webpack/runtime/compat */
 /******/ 
 /******/ if (typeof __nccwpck_require__ !== 'undefined') __nccwpck_require__.ab = new URL('.', import.meta.url).pathname.slice(import.meta.url.match(/^file:\/\/\/\w:/) ? 1 : 0, -1) + "/";
 /******/ 
 /************************************************************************/
 var __webpack_exports__ = {};
+
+// NAMESPACE OBJECT: ./node_modules/@actions/core/lib/platform.js
+var platform_namespaceObject = {};
+__nccwpck_require__.r(platform_namespaceObject);
+__nccwpck_require__.d(platform_namespaceObject, {
+  arch: () => (arch),
+  getDetails: () => (getDetails),
+  isLinux: () => (isLinux),
+  isMacOS: () => (isMacOS),
+  isWindows: () => (isWindows),
+  platform: () => (platform)
+});
+
+// NAMESPACE OBJECT: ./node_modules/@actions/core/lib/core.js
+var core_namespaceObject = {};
+__nccwpck_require__.r(core_namespaceObject);
+__nccwpck_require__.d(core_namespaceObject, {
+  ExitCode: () => (ExitCode),
+  addPath: () => (addPath),
+  debug: () => (debug),
+  endGroup: () => (endGroup),
+  error: () => (error),
+  exportVariable: () => (exportVariable),
+  getBooleanInput: () => (getBooleanInput),
+  getIDToken: () => (getIDToken),
+  getInput: () => (getInput),
+  getMultilineInput: () => (getMultilineInput),
+  getState: () => (getState),
+  group: () => (group),
+  info: () => (info),
+  isDebug: () => (isDebug),
+  markdownSummary: () => (markdownSummary),
+  notice: () => (notice),
+  platform: () => (platform_namespaceObject),
+  saveState: () => (saveState),
+  setCommandEcho: () => (setCommandEcho),
+  setFailed: () => (setFailed),
+  setOutput: () => (setOutput),
+  setSecret: () => (setSecret),
+  startGroup: () => (startGroup),
+  summary: () => (summary),
+  toPlatformPath: () => (toPlatformPath),
+  toPosixPath: () => (toPosixPath),
+  toWin32Path: () => (toWin32Path),
+  warning: () => (warning)
+});
 
 ;// CONCATENATED MODULE: external "os"
 const external_os_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("os");
@@ -30236,7 +30323,7 @@ const external_os_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta
  * Sanitizes an input into a string so it can be passed into issueCommand safely
  * @param input input to sanitize into a string
  */
-function utils_toCommandValue(input) {
+function toCommandValue(input) {
     if (input === null || input === undefined) {
         return '';
     }
@@ -30251,7 +30338,7 @@ function utils_toCommandValue(input) {
  * @returns The command properties to send with the actual annotation command
  * See IssueCommandProperties: https://github.com/actions/runner/blob/main/src/Runner.Worker/ActionCommandManager.cs#L646
  */
-function utils_toCommandProperties(annotationProperties) {
+function toCommandProperties(annotationProperties) {
     if (!Object.keys(annotationProperties).length) {
         return {};
     }
@@ -30301,12 +30388,12 @@ function utils_toCommandProperties(annotationProperties) {
  * This is an internal utility function that powers the public API functions
  * such as setSecret, warning, error, and exportVariable.
  */
-function command_issueCommand(command, properties, message) {
+function issueCommand(command, properties, message) {
     const cmd = new Command(command, properties, message);
     process.stdout.write(cmd.toString() + external_os_namespaceObject.EOL);
 }
-function command_issue(name, message = '') {
-    command_issueCommand(name, {}, message);
+function issue(name, message = '') {
+    issueCommand(name, {}, message);
 }
 const CMD_STRING = '::';
 class Command {
@@ -30343,13 +30430,13 @@ class Command {
     }
 }
 function escapeData(s) {
-    return utils_toCommandValue(s)
+    return toCommandValue(s)
         .replace(/%/g, '%25')
         .replace(/\r/g, '%0D')
         .replace(/\n/g, '%0A');
 }
 function escapeProperty(s) {
-    return utils_toCommandValue(s)
+    return toCommandValue(s)
         .replace(/%/g, '%25')
         .replace(/\r/g, '%0D')
         .replace(/\n/g, '%0A')
@@ -30369,7 +30456,7 @@ const external_fs_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta
 
 
 
-function file_command_issueFileCommand(command, message) {
+function issueFileCommand(command, message) {
     const filePath = process.env[`GITHUB_${command}`];
     if (!filePath) {
         throw new Error(`Unable to find environment variable for file command ${command}`);
@@ -30377,13 +30464,13 @@ function file_command_issueFileCommand(command, message) {
     if (!external_fs_namespaceObject.existsSync(filePath)) {
         throw new Error(`Missing file at path: ${filePath}`);
     }
-    external_fs_namespaceObject.appendFileSync(filePath, `${utils_toCommandValue(message)}${external_os_namespaceObject.EOL}`, {
+    external_fs_namespaceObject.appendFileSync(filePath, `${toCommandValue(message)}${external_os_namespaceObject.EOL}`, {
         encoding: 'utf8'
     });
 }
-function file_command_prepareKeyValueMessage(key, value) {
+function prepareKeyValueMessage(key, value) {
     const delimiter = `ghadelimiter_${external_crypto_namespaceObject.randomUUID()}`;
-    const convertedValue = utils_toCommandValue(value);
+    const convertedValue = toCommandValue(value);
     // These should realistically never happen, but just in case someone finds a
     // way to exploit uuid generation let's not allow keys or values that contain
     // the delimiter.
@@ -30400,8 +30487,10 @@ function file_command_prepareKeyValueMessage(key, value) {
 const external_path_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("path");
 // EXTERNAL MODULE: external "http"
 var external_http_ = __nccwpck_require__(8611);
+var external_http_namespaceObject = /*#__PURE__*/__nccwpck_require__.t(external_http_, 2);
 // EXTERNAL MODULE: external "https"
 var external_https_ = __nccwpck_require__(5692);
+var external_https_namespaceObject = /*#__PURE__*/__nccwpck_require__.t(external_https_, 2);
 ;// CONCATENATED MODULE: ./node_modules/@actions/http-client/lib/proxy.js
 function getProxyUrl(reqUrl) {
     const usingSsl = reqUrl.protocol === 'https:';
@@ -30494,7 +30583,7 @@ class DecodedURL extends URL {
 }
 //# sourceMappingURL=proxy.js.map
 // EXTERNAL MODULE: ./node_modules/tunnel/index.js
-var node_modules_tunnel = __nccwpck_require__(770);
+var tunnel = __nccwpck_require__(770);
 // EXTERNAL MODULE: ./node_modules/undici/index.js
 var undici = __nccwpck_require__(6752);
 ;// CONCATENATED MODULE: ./node_modules/@actions/http-client/lib/index.js
@@ -30572,7 +30661,7 @@ const HttpResponseRetryCodes = [
     HttpCodes.ServiceUnavailable,
     HttpCodes.GatewayTimeout
 ];
-const RetryableHttpVerbs = (/* unused pure expression or super */ null && (['OPTIONS', 'GET', 'DELETE', 'HEAD']));
+const RetryableHttpVerbs = ['OPTIONS', 'GET', 'DELETE', 'HEAD'];
 const ExponentialBackoffCeiling = 10;
 const ExponentialBackoffTimeSlice = 5;
 class HttpClientError extends Error {
@@ -30618,7 +30707,7 @@ function isHttps(requestUrl) {
     const parsedUrl = new URL(requestUrl);
     return parsedUrl.protocol === 'https:';
 }
-class lib_HttpClient {
+class HttpClient {
     constructor(userAgent, handlers, requestOptions) {
         this._ignoreSslError = false;
         this._allowRedirects = true;
@@ -30921,7 +31010,7 @@ class lib_HttpClient {
     }
     getAgentDispatcher(serverUrl) {
         const parsedUrl = new URL(serverUrl);
-        const proxyUrl = pm.getProxyUrl(parsedUrl);
+        const proxyUrl = getProxyUrl(parsedUrl);
         const useProxy = proxyUrl && proxyUrl.hostname;
         if (!useProxy) {
             return;
@@ -30932,7 +31021,7 @@ class lib_HttpClient {
         const info = {};
         info.parsedUrl = requestUrl;
         const usingSsl = info.parsedUrl.protocol === 'https:';
-        info.httpModule = usingSsl ? https : http;
+        info.httpModule = usingSsl ? external_https_namespaceObject : external_http_namespaceObject;
         const defaultPort = usingSsl ? 443 : 80;
         info.options = {};
         info.options.host = info.parsedUrl.hostname;
@@ -31031,7 +31120,7 @@ class lib_HttpClient {
     }
     _getAgent(parsedUrl) {
         let agent;
-        const proxyUrl = pm.getProxyUrl(parsedUrl);
+        const proxyUrl = getProxyUrl(parsedUrl);
         const useProxy = proxyUrl && proxyUrl.hostname;
         if (this._keepAlive && useProxy) {
             agent = this._proxyAgent;
@@ -31046,7 +31135,7 @@ class lib_HttpClient {
         const usingSsl = parsedUrl.protocol === 'https:';
         let maxSockets = 100;
         if (this.requestOptions) {
-            maxSockets = this.requestOptions.maxSockets || http.globalAgent.maxSockets;
+            maxSockets = this.requestOptions.maxSockets || external_http_.globalAgent.maxSockets;
         }
         // This is `useProxy` again, but we need to check `proxyURl` directly for TypeScripts's flow analysis.
         if (proxyUrl && proxyUrl.hostname) {
@@ -31071,7 +31160,7 @@ class lib_HttpClient {
         // if tunneling agent isn't assigned create a new agent
         if (!agent) {
             const options = { keepAlive: this._keepAlive, maxSockets };
-            agent = usingSsl ? new https.Agent(options) : new http.Agent(options);
+            agent = usingSsl ? new external_https_.Agent(options) : new external_http_.Agent(options);
             this._agent = agent;
         }
         if (usingSsl && this._ignoreSslError) {
@@ -31094,7 +31183,7 @@ class lib_HttpClient {
             return proxyAgent;
         }
         const usingSsl = parsedUrl.protocol === 'https:';
-        proxyAgent = new ProxyAgent(Object.assign({ uri: proxyUrl.href, pipelining: !this._keepAlive ? 0 : 1 }, ((proxyUrl.username || proxyUrl.password) && {
+        proxyAgent = new undici.ProxyAgent(Object.assign({ uri: proxyUrl.href, pipelining: !this._keepAlive ? 0 : 1 }, ((proxyUrl.username || proxyUrl.password) && {
             token: `Basic ${Buffer.from(`${proxyUrl.username}:${proxyUrl.password}`).toString('base64')}`
         })));
         this._proxyAgentDispatcher = proxyAgent;
@@ -31225,7 +31314,7 @@ class BasicCredentialHandler {
         });
     }
 }
-class auth_BearerCredentialHandler {
+class BearerCredentialHandler {
     constructor(token) {
         this.token = token;
     }
@@ -31283,13 +31372,13 @@ var oidc_utils_awaiter = (undefined && undefined.__awaiter) || function (thisArg
 
 
 
-class oidc_utils_OidcClient {
+class OidcClient {
     static createHttpClient(allowRetry = true, maxRetry = 10) {
         const requestOptions = {
             allowRetries: allowRetry,
             maxRetries: maxRetry
         };
-        return new HttpClient('actions/oidc-client', [new BearerCredentialHandler(oidc_utils_OidcClient.getRequestToken())], requestOptions);
+        return new HttpClient('actions/oidc-client', [new BearerCredentialHandler(OidcClient.getRequestToken())], requestOptions);
     }
     static getRequestToken() {
         const token = process.env['ACTIONS_ID_TOKEN_REQUEST_TOKEN'];
@@ -31308,7 +31397,7 @@ class oidc_utils_OidcClient {
     static getCall(id_token_url) {
         return oidc_utils_awaiter(this, void 0, void 0, function* () {
             var _a;
-            const httpclient = oidc_utils_OidcClient.createHttpClient();
+            const httpclient = OidcClient.createHttpClient();
             const res = yield httpclient
                 .getJson(id_token_url)
                 .catch(error => {
@@ -31327,13 +31416,13 @@ class oidc_utils_OidcClient {
         return oidc_utils_awaiter(this, void 0, void 0, function* () {
             try {
                 // New ID Token is requested from action service
-                let id_token_url = oidc_utils_OidcClient.getIDTokenUrl();
+                let id_token_url = OidcClient.getIDTokenUrl();
                 if (audience) {
                     const encodedAudience = encodeURIComponent(audience);
                     id_token_url = `${id_token_url}&audience=${encodedAudience}`;
                 }
                 debug(`ID token url is ${id_token_url}`);
-                const id_token = yield oidc_utils_OidcClient.getCall(id_token_url);
+                const id_token = yield OidcClient.getCall(id_token_url);
                 setSecret(id_token);
                 return id_token;
             }
@@ -31622,8 +31711,8 @@ const _summary = new Summary();
 /**
  * @deprecated use `core.summary`
  */
-const markdownSummary = (/* unused pure expression or super */ null && (_summary));
-const summary = (/* unused pure expression or super */ null && (_summary));
+const markdownSummary = _summary;
+const summary = _summary;
 //# sourceMappingURL=summary.js.map
 ;// CONCATENATED MODULE: ./node_modules/@actions/core/lib/path-utils.js
 
@@ -31656,7 +31745,7 @@ function toWin32Path(pth) {
  * @return string The platform-specific path.
  */
 function toPlatformPath(pth) {
-    return pth.replace(/[/\\]/g, path.sep);
+    return pth.replace(/[/\\]/g, external_path_namespaceObject.sep);
 }
 //# sourceMappingURL=path-utils.js.map
 // EXTERNAL MODULE: external "string_decoder"
@@ -32731,16 +32820,16 @@ var exec_awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arg
  * @param     options            optional exec options.  See ExecOptions
  * @returns   Promise<number>    exit code
  */
-function exec_exec(commandLine, args, options) {
+function exec(commandLine, args, options) {
     return exec_awaiter(this, void 0, void 0, function* () {
-        const commandArgs = tr.argStringToArray(commandLine);
+        const commandArgs = argStringToArray(commandLine);
         if (commandArgs.length === 0) {
             throw new Error(`Parameter 'commandLine' cannot be null or empty.`);
         }
         // Path to tool to execute should be first arg
         const toolPath = commandArgs[0];
         args = commandArgs.slice(1).concat(args || []);
-        const runner = new tr.ToolRunner(toolPath, args, options);
+        const runner = new ToolRunner(toolPath, args, options);
         return runner.exec();
     });
 }
@@ -32760,8 +32849,8 @@ function getExecOutput(commandLine, args, options) {
         let stdout = '';
         let stderr = '';
         //Using string decoder covers the case where a mult-byte character is split
-        const stdoutDecoder = new StringDecoder('utf8');
-        const stderrDecoder = new StringDecoder('utf8');
+        const stdoutDecoder = new external_string_decoder_.StringDecoder('utf8');
+        const stderrDecoder = new external_string_decoder_.StringDecoder('utf8');
         const originalStdoutListener = (_a = options === null || options === void 0 ? void 0 : options.listeners) === null || _a === void 0 ? void 0 : _a.stdout;
         const originalStdErrListener = (_b = options === null || options === void 0 ? void 0 : options.listeners) === null || _b === void 0 ? void 0 : _b.stderr;
         const stdErrListener = (data) => {
@@ -32777,7 +32866,7 @@ function getExecOutput(commandLine, args, options) {
             }
         };
         const listeners = Object.assign(Object.assign({}, options === null || options === void 0 ? void 0 : options.listeners), { stdout: stdOutListener, stderr: stdErrListener });
-        const exitCode = yield exec_exec(commandLine, args, Object.assign(Object.assign({}, options), { listeners }));
+        const exitCode = yield exec(commandLine, args, Object.assign(Object.assign({}, options), { listeners }));
         //flush any remaining characters
         stdout += stdoutDecoder.end();
         stderr += stderrDecoder.end();
@@ -32802,10 +32891,10 @@ var platform_awaiter = (undefined && undefined.__awaiter) || function (thisArg, 
 
 
 const getWindowsInfo = () => platform_awaiter(void 0, void 0, void 0, function* () {
-    const { stdout: version } = yield exec.getExecOutput('powershell -command "(Get-CimInstance -ClassName Win32_OperatingSystem).Version"', undefined, {
+    const { stdout: version } = yield getExecOutput('powershell -command "(Get-CimInstance -ClassName Win32_OperatingSystem).Version"', undefined, {
         silent: true
     });
-    const { stdout: name } = yield exec.getExecOutput('powershell -command "(Get-CimInstance -ClassName Win32_OperatingSystem).Caption"', undefined, {
+    const { stdout: name } = yield getExecOutput('powershell -command "(Get-CimInstance -ClassName Win32_OperatingSystem).Caption"', undefined, {
         silent: true
     });
     return {
@@ -32815,7 +32904,7 @@ const getWindowsInfo = () => platform_awaiter(void 0, void 0, void 0, function* 
 });
 const getMacOsInfo = () => platform_awaiter(void 0, void 0, void 0, function* () {
     var _a, _b, _c, _d;
-    const { stdout } = yield exec.getExecOutput('sw_vers', undefined, {
+    const { stdout } = yield getExecOutput('sw_vers', undefined, {
         silent: true
     });
     const version = (_b = (_a = stdout.match(/ProductVersion:\s*(.+)/)) === null || _a === void 0 ? void 0 : _a[1]) !== null && _b !== void 0 ? _b : '';
@@ -32826,7 +32915,7 @@ const getMacOsInfo = () => platform_awaiter(void 0, void 0, void 0, function* ()
     };
 });
 const getLinuxInfo = () => platform_awaiter(void 0, void 0, void 0, function* () {
-    const { stdout } = yield exec.getExecOutput('lsb_release', ['-i', '-r', '-s'], {
+    const { stdout } = yield getExecOutput('lsb_release', ['-i', '-r', '-s'], {
         silent: true
     });
     const [name, version] = stdout.trim().split('\n');
@@ -32931,7 +33020,7 @@ function exportVariable(name, val) {
  * console.log(`Using token: ${apiToken}`); // Outputs: "Using token: ***"
  * ```
  */
-function core_setSecret(secret) {
+function setSecret(secret) {
     issueCommand('add-mask', {}, secret);
 }
 /**
@@ -32946,7 +33035,7 @@ function addPath(inputPath) {
     else {
         issueCommand('add-path', {}, inputPath);
     }
-    process.env['PATH'] = `${inputPath}${path.delimiter}${process.env['PATH']}`;
+    process.env['PATH'] = `${inputPath}${external_path_namespaceObject.delimiter}${process.env['PATH']}`;
 }
 /**
  * Gets the value of an input.
@@ -33015,10 +33104,10 @@ function getBooleanInput(name, options) {
 function setOutput(name, value) {
     const filePath = process.env['GITHUB_OUTPUT'] || '';
     if (filePath) {
-        return file_command_issueFileCommand('OUTPUT', file_command_prepareKeyValueMessage(name, value));
+        return issueFileCommand('OUTPUT', prepareKeyValueMessage(name, value));
     }
     process.stdout.write(external_os_namespaceObject.EOL);
-    command_issueCommand('set-output', { name }, utils_toCommandValue(value));
+    issueCommand('set-output', { name }, toCommandValue(value));
 }
 /**
  * Enables or disables the echoing of commands into stdout for the rest of the step.
@@ -33053,7 +33142,7 @@ function isDebug() {
  * Writes debug message to user log
  * @param message debug message
  */
-function core_debug(message) {
+function debug(message) {
     issueCommand('debug', {}, message);
 }
 /**
@@ -33062,7 +33151,7 @@ function core_debug(message) {
  * @param properties optional properties to add to the annotation.
  */
 function error(message, properties = {}) {
-    command_issueCommand('error', utils_toCommandProperties(properties), message instanceof Error ? message.toString() : message);
+    issueCommand('error', toCommandProperties(properties), message instanceof Error ? message.toString() : message);
 }
 /**
  * Adds a warning issue
@@ -33070,7 +33159,7 @@ function error(message, properties = {}) {
  * @param properties optional properties to add to the annotation.
  */
 function warning(message, properties = {}) {
-    command_issueCommand('warning', utils_toCommandProperties(properties), message instanceof Error ? message.toString() : message);
+    issueCommand('warning', toCommandProperties(properties), message instanceof Error ? message.toString() : message);
 }
 /**
  * Adds a notice issue
@@ -37488,86 +37577,6 @@ function getOctokit(token, options, ...additionalPlugins) {
     return new GitHubWithPlugins(getOctokitOptions(token, options));
 }
 //# sourceMappingURL=github.js.map
-;// CONCATENATED MODULE: ./src/ruleset.ts
-/** Typed error for any failure obtaining the ruleset (network or HTTP). */
-class RulesetFetchError extends Error {
-    status;
-    constructor(message, status) {
-        super(message);
-        this.name = 'RulesetFetchError';
-        this.status = status;
-    }
-}
-/**
- * GET `${url}/functions/v1/ci-ruleset` with a bearer token.
- * Returns the parsed, lightly-validated ruleset.
- *
- * Throws `RulesetFetchError` on any network error, non-2xx status, or invalid
- * JSON. Callers must treat that as "cannot scan" and fall back to
- * needs_review/neutral — never a silent pass.
- */
-async function fetchRuleset(url, token) {
-    const base = url.replace(/\/+$/, '');
-    const endpoint = `${base}/functions/v1/ci-ruleset`;
-    let res;
-    try {
-        res = await fetch(endpoint, {
-            method: 'GET',
-            headers: {
-                Authorization: `Bearer ${token}`,
-                Accept: 'application/json',
-            },
-        });
-    }
-    catch (err) {
-        throw new RulesetFetchError(`Network error fetching ruleset from ${endpoint}: ${err?.message ?? err}`);
-    }
-    if (!res.ok) {
-        throw new RulesetFetchError(`Ruleset fetch returned HTTP ${res.status} from ${endpoint}`, res.status);
-    }
-    let json;
-    try {
-        json = await res.json();
-    }
-    catch (err) {
-        throw new RulesetFetchError(`Ruleset response was not valid JSON: ${err?.message ?? err}`, res.status);
-    }
-    return validateRuleset(json, endpoint);
-}
-/** Minimal shape validation so a malformed payload fails loudly, not silently. */
-function validateRuleset(json, endpoint) {
-    if (!json || typeof json !== 'object') {
-        throw new RulesetFetchError(`Ruleset response from ${endpoint} was not an object.`);
-    }
-    const obj = json;
-    if (typeof obj.ruleset_version !== 'number') {
-        throw new RulesetFetchError(`Ruleset is missing a numeric "ruleset_version".`);
-    }
-    if (typeof obj.ruleset_hash !== 'string') {
-        throw new RulesetFetchError(`Ruleset is missing a string "ruleset_hash".`);
-    }
-    if (!Array.isArray(obj.rules)) {
-        throw new RulesetFetchError(`Ruleset is missing a "rules" array.`);
-    }
-    return {
-        ruleset_version: obj.ruleset_version,
-        ruleset_hash: obj.ruleset_hash,
-        rules: obj.rules,
-        allowlist: obj.allowlist ?? {
-            emails: [],
-            names: [],
-            domains: [],
-            ip_ranges: [],
-            ibans: [],
-        },
-        signatures: obj.signatures ?? {
-            'telemetry-sdks': [],
-            'pii-datastore-credentials': [],
-            'processor-jurisdiction': [],
-        },
-    };
-}
-
 ;// CONCATENATED MODULE: ./src/diff.ts
 /**
  * Minimal unified-diff parser.
@@ -37837,6 +37846,29 @@ function maskFinding(type, rawValue, file, line) {
         }
     }
     return evidence;
+}
+/** Separates the mask part from the location part of masked evidence (see maskFinding). */
+const EVIDENCE_SEPARATOR = ' @ ';
+/**
+ * Break every run of 8 or more digits IN THE LOCATION PART of masked evidence into groups of four joined by
+ * U+00B7, e.g. `m @ supabase/migrations/20261003090000_x.sql` -> `m @ supabase/migrations/2026·1003·0900·00_x.sql`.
+ *
+ * Masked evidence is `<mask> @ <location>`. ci-scan-result refuses any stored string holding an 8+ digit run
+ * (looksUnmasked: such a run reads as a raw IBAN, phone number or card), and the location carries the FILE PATH,
+ * so one finding in a timestamped file (every Supabase migration) made an older server reject the whole post.
+ *
+ * ONLY the part after the FIRST ` @ ` is transformed. The mask part is never touched: should it ever carry an
+ * unmasked digit run (a scanner bug), it must reach the server as it is so the server backstop can refuse it,
+ * instead of being disguised as a grouped run. Evidence with no ` @ ` has no location and is returned unchanged.
+ * Applied to the POSTED evidence only (report.ts): the check run keeps the real path. Every digit is kept, so two
+ * paths never collapse into one.
+ */
+function groupLongDigitRuns(value) {
+    const at = value.indexOf(EVIDENCE_SEPARATOR);
+    if (at < 0)
+        return value;
+    const cut = at + EVIDENCE_SEPARATOR.length;
+    return value.slice(0, cut) + value.slice(cut).replace(/\d{8,}/g, (run) => run.replace(/(\d{4})(?=\d)/g, '$1\u00b7'));
 }
 /**
  * Strip newlines/control chars and clamp length so a crafted label or path can
@@ -39749,6 +39781,16 @@ const ALWAYS_EXCLUDE = [
     /\.min\.[^/]*$/,
     /(^|\/)node_modules\//,
 ];
+/**
+ * Locations are kept beside the result, never in it: `Finding` is the wire contract of ci-scan-result, and a new field
+ * would be posted, stored and compared by every test that does `toEqual` on a result. A WeakMap keyed by the result
+ * object adds nothing to the result, to its JSON, to a payload or to a check run. Index-aligned with `result.findings`.
+ */
+const LOCATIONS = new WeakMap();
+/** The location of each finding of `result`, in the order of `result.findings`; [] for a result `scan()` did not produce. */
+function findingLocations(result) {
+    return LOCATIONS.get(result) ?? [];
+}
 const JS_REGEX_FLAGS = new Set(['g', 'i', 'm', 's', 'u', 'y', 'd']);
 const PCRE_INLINE_FLAG_PREFIX = /^\(\?([a-z]+)\)/;
 /**
@@ -39774,7 +39816,10 @@ function resolvePattern(pattern, extraFlags) {
         return null;
     return { source: remainder, flags: [...new Set([...prefixFlags, ...extraFlags])].join('') };
 }
-/** Compile a regex from a rule pattern; returns null if absent/invalid. */
+/**
+ * Compile a regex from a rule pattern; returns null if absent/invalid. Exported so the baseline walker
+ * (baseline.ts) compiles rule patterns exactly as this scan does.
+ */
 function compile(pattern, flags = 'g') {
     if (!pattern)
         return null;
@@ -40000,13 +40045,13 @@ function unusablePatternFields(rule) {
         .filter(([, value]) => typeof value === 'string' && value.length > 0 && compile(value) === null)
         .map(([field]) => field);
 }
-/** A line is in scope if it matches any file_scope glob (or scope is empty). */
+/** A line is in scope if it matches any file_scope glob (or scope is empty). Shared with baseline.ts. */
 function matchesFileScope(file, fileScope) {
     if (!fileScope || fileScope.length === 0)
         return true;
     return fileScope.some((glob) => globToRegExp(glob).test(file));
 }
-/** A line is excluded if any rule exclude path OR any always-exclude matches. */
+/** A line is excluded if any rule exclude path OR any always-exclude matches. Shared with baseline.ts. */
 function isExcluded(file, excludePaths) {
     if (ALWAYS_EXCLUDE.some((re) => re.test(file)))
         return true;
@@ -40268,6 +40313,16 @@ function globToRegExp(glob) {
     return remember(compiled, null);
 }
 /**
+ * Why this scanner refuses a path glob ('complex' or 'blanket'; a refused glob matches nothing), or null when it
+ * compiles normally. For the baseline walker (baseline.ts), which has to warn about the same refusals. Reads the
+ * same cache globToRegExp fills; its per-scan refusal sets are reset by every scan() call, so a call from here
+ * cannot leak a warning into a PR scan.
+ */
+function globRefusal(glob) {
+    globToRegExp(glob);
+    return GLOB_CACHE.get(glob)?.refusal ?? null;
+}
+/**
  * Is the matched value an allowlisted synthetic / known-safe value?
  *
  * When a rule sets `allowlist: "synthetic"`, we suppress the finding entirely
@@ -40461,6 +40516,9 @@ function evaluateSignature(rule, parsed, signatures) {
                     rule,
                     effectiveAction: rule.action,
                     maskedEvidence: maskFinding(`${rule.detect.mask}:${sigLabel(token)}`, token, line.file, line.lineNo),
+                    file: line.file,
+                    // A removed line's number is its OLD-file position, which means nothing on the new file the report points at.
+                    line: line.side === 'removed' ? null : line.lineNo,
                 });
                 break; // one finding per line is enough
             }
@@ -40554,6 +40612,8 @@ function evaluatePaired(rule, parsed, allowlist) {
             rule,
             effectiveAction,
             maskedEvidence: maskFinding(`${rule.detect.mask} (${suffix})`, pair.minus.text, pair.plus.file, pair.plus.lineNo),
+            file: pair.plus.file,
+            line: pair.plus.lineNo,
         });
     }
     return findings;
@@ -40618,6 +40678,9 @@ function evaluateLinePattern(rule, parsed, allowlist) {
                 rule,
                 effectiveAction,
                 maskedEvidence: maskLineEvidence(rule, value, line),
+                file: line.file,
+                // A removed line's number is its OLD-file position, which means nothing on the new file the report points at.
+                line: line.side === 'removed' ? null : line.lineNo,
             });
         }
     }
@@ -40824,6 +40887,40 @@ function gradeAction(rule, _value, _surroundingText, validatorOutcome, contextPr
     }
     return action;
 }
+const ACTION_SEVERITY = { block: 0, review: 1, advise: 2 };
+/**
+ * `detect.applies_when` grading (capability `context`). The FIRST entry whose every `when` key equals the
+ * context value (strict ===) applies, and it can only LOWER a finding's action, never raise it. No context, no
+ * matching entry, or an unreadable `applies_when` leaves every finding exactly as evaluated. Matching is
+ * untouched: this runs after the evaluator, on its findings, so the context changes grading only.
+ */
+function gradeByContext(rule, findings, context, warnings) {
+    const spec = rule.detect.applies_when;
+    if (spec === undefined || findings.length === 0)
+        return findings;
+    if (!Array.isArray(spec) || !spec.every(isUsableAppliesWhen)) {
+        warnings.push(`Rule "${sanitizeRuleId(rule.id)}" declares an applies_when this Action cannot read; ` +
+            'its findings keep their declared action.');
+        return findings;
+    }
+    if (!context || typeof context !== 'object' || Array.isArray(context))
+        return findings;
+    const entry = spec.find((e) => Object.entries(e.when).every(([k, v]) => context[k] === v));
+    if (!entry)
+        return findings;
+    return findings.map((f) => ACTION_SEVERITY[entry.action] > ACTION_SEVERITY[f.effectiveAction] ? { ...f, effectiveAction: entry.action } : f);
+}
+function isUsableAppliesWhen(e) {
+    if (!e || typeof e !== 'object' || Array.isArray(e))
+        return false;
+    const { when, action } = e;
+    if (action !== 'review' && action !== 'advise')
+        return false;
+    if (!when || typeof when !== 'object' || Array.isArray(when))
+        return false;
+    const keys = Object.keys(when);
+    return keys.length > 0 && keys.every((k) => typeof when[k] === 'boolean');
+}
 /** Downgrade an action one severity step. */
 function downgrade(action) {
     if (action === 'block')
@@ -40886,7 +40983,7 @@ function scan(ruleset, input) {
                     'that part of the rule did not run. Verdict floored to needs_review.');
                 incompleteScan = true;
             }
-            raw.push(...evaluateRule(rule, parsed, prDescription, ruleset.allowlist, ruleset.signatures));
+            raw.push(...gradeByContext(rule, evaluateRule(rule, parsed, prDescription, ruleset.allowlist, ruleset.signatures), ruleset.context, warnings));
         }
         catch {
             // A malformed rule must never crash the gate; record and continue — but a
@@ -40951,6 +41048,7 @@ function scan(ruleset, input) {
     }
     // De-dupe identical (rule + masked evidence) findings.
     const findings = [];
+    const locations = [];
     const seen = new Set();
     let anyBlock = false;
     let anyReview = false;
@@ -40964,12 +41062,12 @@ function scan(ruleset, input) {
             anyBlock = true;
         if (verdict === 'needs_review')
             anyReview = true;
-        findings.push({
-            rule_id: f.rule.id,
-            gdpr_article: f.rule.gdpr_article ?? [],
-            action: f.effectiveAction,
-            masked_evidence: f.maskedEvidence,
-        });
+        // A schema-2 framework's rule carries `articles`; the original GDPR stream keeps
+        // its `gdpr_article` field (and field order) exactly as before.
+        findings.push(f.rule.articles
+            ? { rule_id: f.rule.id, articles: f.rule.articles, action: f.effectiveAction, masked_evidence: f.maskedEvidence }
+            : { rule_id: f.rule.id, gdpr_article: f.rule.gdpr_article ?? [], action: f.effectiveAction, masked_evidence: f.maskedEvidence });
+        locations.push({ file: f.file ?? null, line: f.file ? (f.line ?? null) : null });
     }
     let verdict = anyBlock ? 'fail' : anyReview ? 'needs_review' : 'pass';
     // Truncation safety: never silently pass an incompletely-scanned diff.
@@ -40994,11 +41092,746 @@ function scan(ruleset, input) {
     // thing, that the ruleset did not fully run.
     if (incompleteScan && verdict === 'pass')
         verdict = 'needs_review';
-    return { verdict, findings, warnings };
+    const result = { verdict, findings, warnings };
+    LOCATIONS.set(result, locations);
+    return result;
+}
+
+;// CONCATENATED MODULE: ./src/inventoryContract.ts
+/**
+ * The AI usage inventory contract (PR E), as this Action sees it.
+ *
+ * This is a deliberate COPY of supabase/functions/_shared/ciInventoryContract.ts, not an
+ * import: the Action is published as a standalone mirror and cannot reach into `supabase/`.
+ * The root test `ciInventoryContract.actionParity.test.ts` fails if a rule id, a signature
+ * key or a limit ever disagrees, so the copy cannot drift. Same values, same order.
+ *
+ * Aggregates only: a count per (rule, signature), never a code line.
+ */
+/** EU AI Act rules that run in a baseline scan. A rule outside this list is never scanned or accepted there. */
+const BASELINE_RULE_IDS = [
+    'eaa-ci-ai-sdk-manifest',
+    'eaa-ci-ai-import',
+    'eaa-ci-ai-endpoint',
+    'eaa-ci-emotion-biometric',
+];
+/**
+ * What a detection is, as a small closed vocabulary the Action derives from the matched text and the server re-checks.
+ * Never free text: a key outside this list is rejected, so no customer string reaches the inventory.
+ */
+const SIGNATURE_KEYS = (/* unused pure expression or super */ null && ([
+    'openai',
+    'anthropic',
+    'google-ai',
+    'mistral',
+    'cohere',
+    'langchain',
+    'llamaindex',
+    'huggingface',
+    'groq',
+    'replicate',
+    'ollama',
+    'aws-bedrock',
+    'azure-openai',
+    'vercel-ai-sdk',
+    'litellm',
+    'other-ai',
+    'emotion-biometric',
+]));
+const INVENTORY_LIMITS = {
+    /** Observation rows per post: 3 SDK rules x 16 AI keys + the emotion rule x its one key = 49, the most that can be distinct. */
+    maxObservations: 49,
+    /** Largest count stored for one (rule, signature); a larger one is clamped, never rejected. */
+    maxCount: 1_000_000,
+    /** Sample paths per observation, only ever stored when the organization switched them on (default off, D7). */
+    maxSamplePaths: 3,
+    maxPathChars: 300,
+    /** Scan runs kept per repository; older ones are deleted by ci-inventory-result after each post. */
+    keepRunsPerRepo: 10,
+    /**
+     * Largest request body ci-inventory-result reads (128 KB), checked on Content-Length and again on the bytes read.
+     * A full post (49 observations x 3 paths of 300 characters) is about 50 KB, so a real scan never comes near it.
+     */
+    maxBodyBytes: 131072,
+};
+function isBaselineRuleId(value) {
+    return typeof value === 'string' && BASELINE_RULE_IDS.includes(value);
+}
+function isSignatureKey(value) {
+    return typeof value === 'string' && SIGNATURE_KEYS.includes(value);
+}
+/** The emotion rule has exactly one key, and no other rule may use it: a rule/key pair outside this is never stored or counted. */
+function isValidRuleSignaturePair(rule, key) {
+    return (rule === 'eaa-ci-emotion-biometric') === (key === 'emotion-biometric');
+}
+
+;// CONCATENATED MODULE: ./src/baseline.ts
+/**
+ * PR E · the baseline walker behind `scan-mode: baseline` (AI usage inventory).
+ *
+ * Walks every tracked file of the checkout, runs the EU AI Act baseline rules over each line and returns
+ * AGGREGATES ONLY: a count of matching lines per (rule, signature key), plus optionally up to three example paths.
+ * No code line, no matched text and no file content ever reaches the result; the signature key is chosen from a
+ * fixed vocabulary (inventoryContract.ts), never copied from the code.
+ *
+ * Pure: the file lister/reader and the clock are injected, so the whole walk is unit-tested without a checkout.
+ * Path filtering and pattern compilation are the PR scan's own helpers (scan.ts), so a rule means the same thing in
+ * both modes: same ALWAYS_EXCLUDE, same file_scope / exclude_paths glob semantics, same `(?i)` prefix handling.
+ *
+ * Design: docs/plans/ai-change-control-pr-e-plan.md.
+ */
+
+
+/**
+ * The walk's budgets. Hitting the file cap or the time budget sets `truncated`: the counts are then a lower bound.
+ *
+ * `truncated` is ALSO set whenever the scan could not look where it was meant to, because the server reads
+ * "complete (not truncated) and nothing found" as "this repository no longer uses AI" and deletes its previous
+ * detections. So a run never posts complete-and-clean when a baseline rule did not compile, when a rule's file_scope
+ * holds a glob the scanner refuses (that part of the scope matched nothing), or when a rule had files in its scope
+ * and none of them could be read (all over the size cap, not regular files, failed reads, a sparse checkout). A file
+ * that was read and judged binary counts as read.
+ */
+const BASELINE_LIMITS = {
+    /** Files opened (after exclusions). One more candidate than this marks the result truncated. */
+    maxFiles: 5000,
+    /** A larger file is skipped unread (generated bundles, data dumps). */
+    maxFileBytes: 512 * 1024,
+    /** A NUL byte in this prefix marks a file binary (git's own heuristic). */
+    binarySniffBytes: 8192,
+    /** Wall-clock budget for the whole walk. */
+    budgetMs: 60_000,
+};
+/** Lines between two clock reads inside one file. */
+const BUDGET_SAMPLE_LINES = 512;
+/**
+ * The rules a baseline scan runs: served with `baseline: true` (by ci-ruleset, PR E) AND on the contract's list.
+ * Both, so neither an old server (no flag) nor a server flagging a rule the contract does not know can widen it.
+ */
+function selectBaselineRules(ruleset) {
+    return (ruleset.rules ?? []).filter((r) => !!r && typeof r === 'object' && r.baseline === true && isBaselineRuleId(r.id));
+}
+/**
+ * The signature family table: first match wins, tested against the LOWERCASED matched text of an AI rule
+ * (eaa-ci-ai-sdk-manifest, eaa-ci-ai-import, eaa-ci-ai-endpoint). A match no entry claims is `other-ai`.
+ * The emotion rule always yields `emotion-biometric` and nothing else does.
+ *
+ * Order matters and is deliberate:
+ *  - orchestration SDKs first (Vercel AI SDK, LangChain, LlamaIndex, and Spring AI / Semantic Kernel as `other-ai`),
+ *    because their package names embed the provider they wrap (`@ai-sdk/openai`, `langchain-openai`,
+ *    `spring-ai-openai`) and the inventory records the SDK the code depends on;
+ *  - Azure OpenAI and AWS Bedrock before the providers whose names they contain;
+ *  - Anthropic before Google (`@anthropic-ai/vertex-sdk` is Anthropic's SDK), OpenAI last.
+ */
+const SIGNATURE_FAMILIES = [
+    ['vercel-ai-sdk', /@ai-sdk\/|["'`]ai(?:\/[a-z0-9._/-]*)?["'`]/],
+    ['langchain', /langchain/],
+    ['llamaindex', /llama[-_]?index/],
+    ['other-ai', /springframework\.ai|spring-ai-|semantickernel/],
+    ['azure-openai', /azure[./]openai|azure\.ai\.openai|\.openai\.azure\.com/],
+    ['aws-bedrock', /bedrock-runtime/],
+    ['anthropic', /anthropic/],
+    ['google-ai', /google|vertexai/],
+    ['huggingface', /huggingface|transformers/],
+    ['mistral', /mistral/],
+    ['cohere', /cohere/],
+    ['groq', /groq/],
+    ['replicate', /replicate/],
+    ['ollama', /ollama/],
+    ['litellm', /litellm/],
+    ['openai', /openai/],
+];
+const EMOTION_RULE = 'eaa-ci-emotion-biometric';
+/** The signature key of one match. Only ever a contract key: the matched text itself is dropped right here. */
+function signatureKeyFor(ruleId, matchedText) {
+    if (ruleId === EMOTION_RULE)
+        return 'emotion-biometric';
+    const lower = matchedText.toLowerCase();
+    for (const [key, re] of SIGNATURE_FAMILIES)
+        if (re.test(lower))
+            return key;
+    return 'other-ai';
+}
+const byCodeUnit = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
+/** Accumulated counts to wire observations: sorted by rule_id then signature_key, clamped, capped. */
+function aggregateObservations(acc, samplePaths) {
+    return [...acc.values()]
+        .filter((a) => a.count > 0)
+        .sort((a, b) => byCodeUnit(a.ruleId, b.ruleId) || byCodeUnit(a.key, b.key))
+        .slice(0, INVENTORY_LIMITS.maxObservations)
+        .map((a) => ({
+        rule_id: a.ruleId,
+        signature_key: a.key,
+        count: Math.min(a.count, INVENTORY_LIMITS.maxCount),
+        ...(samplePaths ? { sample_paths: a.paths.slice(0, INVENTORY_LIMITS.maxSamplePaths) } : {}),
+    }));
+}
+/** Compile a rule as the PR scan would; anything it would refuse is reported, never silently dropped. */
+function compileRule(rule, warnings) {
+    const unusable = unusablePatternFields(rule);
+    if (unusable.length > 0) {
+        warnings.push(`Rule "${rule.id}" declares ${unusable.join(', ')} that could not be compiled; that part of the rule did not run.`);
+    }
+    const refused = [...(rule.detect.file_scope ?? []), ...(rule.detect.exclude_paths ?? [])].filter((g) => globRefusal(g) !== null);
+    if (refused.length > 0) {
+        warnings.push(`Rule "${rule.id}" declares ${refused.length} path glob(s) the scanner refuses (they match every path or are too complex); they matched nothing.`);
+    }
+    const re = compile(rule.detect.pattern);
+    if (!re) {
+        if (unusable.length === 0)
+            warnings.push(`Rule "${rule.id}" has no pattern a baseline scan can run; it was skipped.`);
+        return null;
+    }
+    // Tier-1 controls cannot be gated away (same refusal as scan.ts compileGating).
+    if (rule.tier === 1 && (rule.detect.exclude_pattern || rule.detect.require_pattern)) {
+        warnings.push(`Tier-1 rule "${rule.id}" declares exclude_pattern/require_pattern; a tier-1 control cannot be gated, so those fields were ignored.`);
+        return { rule, re, excludeRe: null, requireRe: null, inScope: 0, read: 0 };
+    }
+    return {
+        rule,
+        re,
+        excludeRe: stripStatefulFlags(compile(rule.detect.exclude_pattern, '')),
+        requireRe: stripStatefulFlags(compile(rule.detect.require_pattern, '')),
+        inScope: 0,
+        read: 0,
+    };
+}
+const INCOMPLETE_SUFFIX = 'The scan is marked incomplete, so PulseCheck keeps the previous detections instead of clearing them.';
+function hasNulPrefix(bytes, sniff) {
+    const end = Math.min(bytes.length, sniff);
+    for (let i = 0; i < end; i++)
+        if (bytes[i] === 0)
+            return true;
+    return false;
+}
+/** Walk the tree and aggregate. Never throws for a single bad file; the lister's failure propagates to the caller. */
+async function runBaselineScan(rules, source, opts) {
+    const limits = { ...BASELINE_LIMITS, ...opts.limits };
+    const now = opts.now ?? Date.now;
+    const started = now();
+    const outOfTime = () => now() - started >= limits.budgetMs;
+    const warnings = [];
+    const results = rules.map((r) => compileRule(r, warnings));
+    const compiled = results.filter((c) => c !== null);
+    const stats = { listed: 0, outOfScope: 0, skippedSize: 0, skippedBinary: 0, skippedUnreadable: 0, clampedLines: 0 };
+    const acc = new Map();
+    let opened = 0;
+    let scanned = 0;
+    let truncated = false;
+    // A rule that did not run, or runs over a narrower scope than it declares, cannot vouch for "nothing found".
+    const notRun = rules.filter((_, i) => results[i] === null).map((r) => r.id);
+    if (notRun.length > 0) {
+        truncated = true;
+        warnings.push(`${notRun.length} baseline rule(s) did not run (${notRun.map((id) => `"${id}"`).join(', ')}). ${INCOMPLETE_SUFFIX}`);
+    }
+    for (const c of compiled) {
+        if ((c.rule.detect.file_scope ?? []).some((g) => globRefusal(g) !== null)) {
+            truncated = true;
+            warnings.push(`Rule "${c.rule.id}" did not scan part of its file scope (a refused glob). ${INCOMPLETE_SUFFIX}`);
+        }
+    }
+    const files = compiled.length > 0 ? await source.listFiles() : [];
+    stats.listed = files.length;
+    const decoder = new TextDecoder('utf-8');
+    walk: for (const path of files) {
+        const inScope = compiled.filter((c) => matchesFileScope(path, c.rule.detect.file_scope) && !isExcluded(path, c.rule.detect.exclude_paths));
+        if (inScope.length === 0) {
+            stats.outOfScope++;
+            continue;
+        }
+        if (opened >= limits.maxFiles || outOfTime()) {
+            truncated = true;
+            break;
+        }
+        opened++;
+        for (const c of inScope)
+            c.inScope++;
+        let bytes;
+        try {
+            const size = await source.size(path);
+            if (size === null) {
+                stats.skippedUnreadable++;
+                continue;
+            }
+            if (size > limits.maxFileBytes) {
+                stats.skippedSize++;
+                continue;
+            }
+            bytes = await source.read(path);
+        }
+        catch {
+            stats.skippedUnreadable++;
+            continue;
+        }
+        // Re-checked on the bytes actually read: the file may have changed between stat and read.
+        if (bytes.length > limits.maxFileBytes) {
+            stats.skippedSize++;
+            continue;
+        }
+        for (const c of inScope)
+            c.read++;
+        if (hasNulPrefix(bytes, BASELINE_LIMITS.binarySniffBytes)) {
+            stats.skippedBinary++;
+            continue;
+        }
+        scanned++;
+        const lines = decoder.decode(bytes).split(/\r?\n/);
+        for (let i = 0; i < lines.length; i++) {
+            if (i > 0 && i % BUDGET_SAMPLE_LINES === 0 && outOfTime()) {
+                truncated = true;
+                break walk;
+            }
+            let text = lines[i];
+            if (text.length === 0)
+                continue;
+            if (text.length > MAX_SCAN_LINE_CHARS) {
+                stats.clampedLines++;
+                text = text.slice(0, MAX_SCAN_LINE_CHARS);
+            }
+            for (const c of inScope) {
+                if (c.excludeRe && c.excludeRe.test(text))
+                    continue;
+                if (c.requireRe && !c.requireRe.test(text))
+                    continue;
+                const keys = new Set();
+                c.re.lastIndex = 0;
+                let m;
+                while ((m = c.re.exec(text)) !== null) {
+                    if (c.re.lastIndex === m.index)
+                        c.re.lastIndex++; // zero-width guard
+                    keys.add(signatureKeyFor(c.rule.id, m[0]));
+                    if (!c.re.global)
+                        break;
+                }
+                for (const key of keys) {
+                    const id = `${c.rule.id}|${key}`;
+                    let a = acc.get(id);
+                    if (!a)
+                        acc.set(id, (a = { ruleId: c.rule.id, key, count: 0, paths: [] }));
+                    a.count++;
+                    if (opts.samplePaths &&
+                        a.paths.length < INVENTORY_LIMITS.maxSamplePaths &&
+                        path.length <= INVENTORY_LIMITS.maxPathChars &&
+                        !a.paths.includes(path)) {
+                        a.paths.push(path);
+                    }
+                }
+            }
+        }
+    }
+    for (const c of compiled) {
+        if (c.inScope > 0 && c.read === 0) {
+            truncated = true;
+            warnings.push(`Rule "${c.rule.id}": ${c.inScope} file(s) in its scope, none could be read (over the ${Math.round(limits.maxFileBytes / 1024)} KB size cap, ` +
+                `not a regular file, or the read failed: is the checkout sparse or partial?). ${INCOMPLETE_SUFFIX}`);
+        }
+    }
+    return {
+        payload: {
+            repo: opts.repo,
+            provider: 'github',
+            commit_sha: opts.commitSha,
+            files_scanned: scanned,
+            truncated,
+            observations: aggregateObservations(acc, opts.samplePaths),
+        },
+        stats,
+        warnings,
+    };
+}
+
+;// CONCATENATED MODULE: ./src/frameworks.ts
+/**
+ * The CI scan frameworks (streams) this Action understands.
+ *
+ * This is a deliberate COPY of supabase/functions/_shared/ciFrameworks.ts, not an
+ * import: the Action is published as a standalone mirror and cannot reach into
+ * `supabase/`. The root test `ciFrameworks.actionParity.test.ts` fails if the ids,
+ * check-run names or articles labels ever disagree, so the copy cannot drift.
+ *
+ * A framework id is the gate-framework category string.
+ */
+const FRAMEWORKS = ['Data Compliance', 'EU AI Act'];
+/** The original GDPR stream: what every pre-schema-2 server and Action means. */
+const DEFAULT_FRAMEWORK = 'Data Compliance';
+const FRAMEWORK_INFO = {
+    'Data Compliance': { checkRunName: 'Data Compliance Gate', articlesLabel: 'GDPR', title: 'Data Compliance' },
+    'EU AI Act': { checkRunName: 'PulseCheck · AI change control', articlesLabel: 'May be relevant to', title: 'AI change control' },
+};
+/**
+ * How much of a framework's result the Action POSTS. A copy of the server's ingest
+ * limits (`MAX_FINDINGS_PER_RESULT` etc. in _shared/ciFrameworks.ts; parity-tested).
+ * The check run still shows its own (smaller) summary; this only bounds the post.
+ */
+const POST_LIMITS = { maxFindings: 200, maxFieldChars: 500, maxListItems: 20 };
+/** Detect capabilities this Action can evaluate, announced to the server via `?caps=`. */
+const SUPPORTED_CAPS = ['context'];
+function isFramework(value) {
+    return typeof value === 'string' && FRAMEWORKS.includes(value);
+}
+/**
+ * Parse the `fail-on` input: a comma list of framework names, case-insensitive.
+ * Empty -> only the original GDPR stream (today's behaviour). `none` -> no
+ * framework fails the step. Names we do not know are returned separately so the
+ * caller can warn about a typo; a list made ONLY of unknown names falls back to the
+ * default rather than silently disabling failing.
+ */
+function parseFailOn(raw) {
+    const tokens = (raw ?? '').split(',').map((t) => t.trim()).filter(Boolean);
+    if (tokens.length === 0)
+        return { failOn: [DEFAULT_FRAMEWORK], unknown: [] };
+    if (tokens.length === 1 && tokens[0].toLowerCase() === 'none')
+        return { failOn: [], unknown: [] };
+    const wanted = new Set();
+    const unknown = [];
+    for (const token of tokens) {
+        const match = FRAMEWORKS.find((f) => f.toLowerCase() === token.toLowerCase());
+        if (match)
+            wanted.add(match);
+        else
+            unknown.push(token);
+    }
+    if (wanted.size === 0)
+        return { failOn: [DEFAULT_FRAMEWORK], unknown };
+    return { failOn: FRAMEWORKS.filter((f) => wanted.has(f)), unknown };
+}
+
+;// CONCATENATED MODULE: ./src/provider.ts
+/**
+ * Source-control providers this client can scan for. The server's enum is wider (`ciFrameworks.ts` CI_SCAN_PROVIDERS also
+ * lists Azure DevOps and Bitbucket); only the two with an adapter are accepted here, so a typo in `--provider` is an
+ * error and not a silent GitHub scan.
+ *
+ * GitHub is the default everywhere. The server also defaults an absent provider to `github`, which is why a GitHub
+ * request carries no provider at all (its bytes are what they always were) and why every path that would drop the
+ * provider (the legacy post shape) is closed for any other provider (report.ts).
+ */
+const GATE_PROVIDERS = (/* unused pure expression or super */ null && (['github', 'gitlab']));
+const DEFAULT_PROVIDER = 'github';
+const PROVIDER_LABEL = { github: 'GitHub', gitlab: 'GitLab' };
+function isGateProvider(value) {
+    return typeof value === 'string' && GATE_PROVIDERS.includes(value);
+}
+
+;// CONCATENATED MODULE: ./src/ruleset.ts
+/**
+ * Ruleset retrieval. The Action bakes in NO rules: it is a dumb sensor. The
+ * authoritative rulesets are pulled from PulseCheck at run time so policy can
+ * change centrally without re-releasing the Action.
+ *
+ * It asks for the multi-framework "schema 2" response. An OLD server ignores the
+ * unknown query parameter and returns the single legacy ruleset; that is read as
+ * one 'Data Compliance' ruleset, so this Action keeps working against a server
+ * that has not been redeployed yet (our own PR CI runs exactly that mix).
+ */
+
+
+/** Typed error for any failure obtaining the ruleset (network or HTTP). */
+class RulesetFetchError extends Error {
+    status;
+    constructor(message, status) {
+        super(message);
+        this.name = 'RulesetFetchError';
+        this.status = status;
+    }
+}
+const SHA256_HEX = /^[0-9a-f]{64}$/;
+const REASON = /^[a-z_]{1,40}$/;
+const MAX_UNAVAILABLE = 8;
+function ruleset_isPlainObject(v) {
+    return typeof v === 'object' && v !== null && !Array.isArray(v);
+}
+/**
+ * The registry context of one schema-2 ruleset. Both fields or neither: a context without a valid 64-hex hash
+ * (or the reverse) is REJECTED, so the Action never grades with, or posts, a context the server would refuse.
+ */
+function readContext(e) {
+    const hasContext = e.context !== undefined && e.context !== null;
+    const hasHash = e.context_hash !== undefined && e.context_hash !== null;
+    if (!hasContext && !hasHash)
+        return {};
+    if (hasContext && hasHash && ruleset_isPlainObject(e.context) && typeof e.context_hash === 'string' && SHA256_HEX.test(e.context_hash)) {
+        return { context: e.context, context_hash: e.context_hash };
+    }
+    return { context_rejected: true };
+}
+function readUnavailable(raw) {
+    if (!Array.isArray(raw))
+        return [];
+    const out = [];
+    for (const item of raw.slice(0, MAX_UNAVAILABLE)) {
+        if (!ruleset_isPlainObject(item))
+            continue;
+        const { framework, reason } = item;
+        if (typeof framework !== 'string' || framework.length === 0 || framework.length > 64)
+            continue;
+        if (typeof reason !== 'string' || !REASON.test(reason))
+            continue;
+        out.push({ framework: framework.replace(/[^A-Za-z0-9 ._-]/g, ''), reason });
+    }
+    return out;
+}
+/**
+ * GET `${url}/functions/v1/ci-ruleset?schema=2[&caps=...]` with a bearer token.
+ *
+ * Throws `RulesetFetchError` on any network error, non-2xx status, invalid JSON or
+ * unusable payload. Callers must treat that as "cannot scan" and fall back to
+ * needs_review/neutral, never a silent pass.
+ */
+async function fetchRulesets(url, token, caps = SUPPORTED_CAPS, repo, provider = DEFAULT_PROVIDER) {
+    const base = url.replace(/\/+$/, '');
+    const query = new URLSearchParams({ schema: '2' });
+    if (caps.length > 0)
+        query.set('caps', caps.join(','));
+    // The registry context is per repository. The server normalises the path; nothing here stores it.
+    if (repo)
+        query.set('repo', repo);
+    // The server reads an absent provider as GitHub, so GitHub sends none: its request stays byte-identical.
+    if (provider !== DEFAULT_PROVIDER)
+        query.set('provider', provider);
+    const endpoint = `${base}/functions/v1/ci-ruleset?${query.toString()}`;
+    let res;
+    try {
+        res = await fetch(endpoint, {
+            method: 'GET',
+            headers: {
+                Authorization: `Bearer ${token}`,
+                Accept: 'application/json',
+            },
+        });
+    }
+    catch (err) {
+        throw new RulesetFetchError(`Network error fetching ruleset from ${endpoint}: ${err?.message ?? err}`);
+    }
+    if (!res.ok) {
+        throw new RulesetFetchError(`Ruleset fetch returned HTTP ${res.status} from ${endpoint}` +
+            (res.status === 403
+                ? ' (this token may lack the ruleset:read scope, or be limited to other repositories or providers: create one for this repository in PulseCheck, Organization Settings, CI Gate)'
+                : ''), res.status);
+    }
+    let json;
+    try {
+        json = await res.json();
+    }
+    catch (err) {
+        throw new RulesetFetchError(`Ruleset response was not valid JSON: ${err?.message ?? err}`, res.status);
+    }
+    if (!json || typeof json !== 'object') {
+        throw new RulesetFetchError(`Ruleset response from ${endpoint} was not an object.`);
+    }
+    const obj = json;
+    // Legacy server: a single ruleset at the top level.
+    if (obj.schema !== 2) {
+        return { shape: 'legacy', rulesets: [{ ...validateRuleset(obj), framework: DEFAULT_FRAMEWORK }], unavailable: [] };
+    }
+    if (!Array.isArray(obj.rulesets)) {
+        throw new RulesetFetchError(`Schema-2 ruleset response is missing a "rulesets" array.`);
+    }
+    const rulesets = [];
+    for (const entry of obj.rulesets) {
+        if (!entry || typeof entry !== 'object') {
+            throw new RulesetFetchError(`Schema-2 ruleset response contains a non-object entry.`);
+        }
+        const e = entry;
+        // A framework this Action predates (a newer server) is skipped, not fatal.
+        if (!isFramework(e.framework))
+            continue;
+        rulesets.push({
+            ...validateRuleset(e),
+            framework: e.framework,
+            dropped_rules: Array.isArray(e.dropped_rules) ? e.dropped_rules : [],
+            ...readContext(e),
+        });
+    }
+    if (rulesets.length === 0) {
+        throw new RulesetFetchError(`Schema-2 ruleset response held no framework this Action understands.`);
+    }
+    return { shape: 'schema2', rulesets, unavailable: readUnavailable(obj.unavailable) };
+}
+/** Minimal shape validation so a malformed payload fails loudly, not silently. */
+function validateRuleset(obj) {
+    if (typeof obj.ruleset_version !== 'number') {
+        throw new RulesetFetchError(`Ruleset is missing a numeric "ruleset_version".`);
+    }
+    if (typeof obj.ruleset_hash !== 'string') {
+        throw new RulesetFetchError(`Ruleset is missing a string "ruleset_hash".`);
+    }
+    if (!Array.isArray(obj.rules)) {
+        throw new RulesetFetchError(`Ruleset is missing a "rules" array.`);
+    }
+    return {
+        ruleset_version: obj.ruleset_version,
+        ruleset_hash: obj.ruleset_hash,
+        rules: obj.rules,
+        allowlist: obj.allowlist ?? {
+            emails: [],
+            names: [],
+            domains: [],
+            ip_ranges: [],
+            ibans: [],
+        },
+        signatures: obj.signatures ?? {
+            'telemetry-sdks': [],
+            'pii-datastore-credentials': [],
+            'processor-jurisdiction': [],
+        },
+    };
+}
+
+;// CONCATENATED MODULE: ./src/baselineRun.ts
+/**
+ * PR E · `scan-mode: baseline`, provider-neutral: fetch the EU AI Act ruleset, walk the checkout (baseline.ts) and
+ * POST the aggregate inventory to ci-inventory-result.
+ *
+ * Policy: a baseline run is a scheduled inventory, not a gate. It publishes no check run and no verdict, ignores
+ * `fail-on`, and NEVER fails the step: an unreachable PulseCheck, a token without `inventory:write`, an org that
+ * has not switched AI change control on, or a server that predates PR E are each logged and the run exits 0.
+ * (An invalid `scan-mode` input is the one failure, and it is raised by index.ts before anything runs.)
+ */
+
+
+
+const EU_AI_ACT = 'EU AI Act';
+/** Clamp and de-fang a raw input value before echoing it in an error (no newlines, no workflow commands). */
+function echo(raw) {
+    const cleaned = raw.replace(/[^A-Za-z0-9 ._-]/g, '_');
+    return cleaned.length > 40 ? `${cleaned.slice(0, 40)}…` : cleaned;
+}
+/** The `scan-mode` input: empty means `pr` (today's behaviour). Case-insensitive. */
+function parseScanMode(raw) {
+    const v = (raw ?? '').trim().toLowerCase();
+    if (v === '' || v === 'pr')
+        return { mode: 'pr' };
+    if (v === 'baseline')
+        return { mode: 'baseline' };
+    return { error: `scan-mode must be 'pr' or 'baseline' (got "${echo((raw ?? '').trim())}").` };
+}
+/** The `baseline-sample-paths` input. Anything but true/false stays OFF (the privacy-safe default) with a warning. */
+function parseSamplePaths(raw) {
+    const v = (raw ?? '').trim().toLowerCase();
+    if (v === '' || v === 'false')
+        return { value: false };
+    if (v === 'true')
+        return { value: true };
+    return { value: false, warning: `baseline-sample-paths must be 'true' or 'false' (got "${echo((raw ?? '').trim())}"); sample paths stay off.` };
+}
+const message = (err) => (err instanceof Error ? err.message : String(err));
+/** The `error.code` of an errorResponse body ({ error: { code, message }, success: false }), or null. Never throws. */
+async function errorCodeOf(res) {
+    try {
+        const body = (await res.json());
+        return typeof body?.error?.code === 'string' ? body.error.code : null;
+    }
+    catch {
+        return null;
+    }
+}
+/**
+ * The explanation for a 401/403 from ci-inventory-result, chosen by status and the allowlisted error code. The
+ * server's own message is never echoed (it is not ours to print into a workflow log).
+ */
+function refusalReason(status, code) {
+    if (status === 401) {
+        return 'the CI token is invalid or has been revoked. Create a new token with inventory:write in PulseCheck (Organization settings → CI Gate) and update the workflow secret.';
+    }
+    if (code === 'org_expired') {
+        return "the organization's PulseCheck subscription or trial has ended, so it cannot record new data. Renew it in PulseCheck (Billing); the token itself is fine.";
+    }
+    return 'the CI token lacks the inventory:write scope. Create a token with inventory:write in PulseCheck (Organization settings → CI Gate).';
+}
+async function runBaseline(run, checkout, io) {
+    // The same fetch, caps and repository parameter as a PR scan: the baseline rules need `context` to be served.
+    let fetched;
+    try {
+        fetched = await fetchRulesets(run.url, run.token, SUPPORTED_CAPS, run.repo);
+    }
+    catch (err) {
+        const reason = err instanceof RulesetFetchError ? err.message : String(err);
+        io.warning(`Could not reach PulseCheck to fetch the ruleset (${reason}). No AI usage inventory was recorded this run.`);
+        return;
+    }
+    const eu = fetched.rulesets.find((r) => r.framework === EU_AI_ACT);
+    if (!eu) {
+        io.info('PulseCheck did not serve an EU AI Act ruleset for this organization (AI change control is not switched on), so there is nothing to inventory.');
+        return;
+    }
+    const rules = selectBaselineRules(eu);
+    if (rules.length === 0) {
+        io.info('The EU AI Act ruleset PulseCheck served has no baseline rules (the server predates the AI usage inventory), so there is nothing to inventory.');
+        return;
+    }
+    let commitSha;
+    try {
+        commitSha = await checkout.headSha();
+    }
+    catch {
+        commitSha = run.fallbackSha;
+    }
+    let result;
+    try {
+        result = await runBaselineScan(rules, checkout, { repo: run.repo, commitSha, samplePaths: run.samplePaths, limits: run.limits });
+    }
+    catch (err) {
+        io.warning(`Could not list the repository's files (${message(err)}). A baseline scan needs the code checked out: add an actions/checkout step before this action. No AI usage inventory was recorded this run.`);
+        return;
+    }
+    const { payload, stats, warnings } = result;
+    for (const w of warnings)
+        io.warning(`AI usage inventory: ${w}`);
+    io.info(`Baseline scan: ${stats.listed} tracked file(s), ${payload.files_scanned} scanned ` +
+        `(${stats.outOfScope} out of scope, ${stats.skippedSize} over the size cap, ${stats.skippedBinary} binary, ` +
+        `${stats.skippedUnreadable} unreadable), ${payload.observations.length} observation(s). ` +
+        `Sample paths: ${run.samplePaths ? 'on' : 'off'}.`);
+    if (payload.truncated) {
+        io.warning('The baseline scan is incomplete (it stopped at its file or time budget, or could not run a rule or read the files in its scope; see the warnings above), so the AI usage counts are a lower bound and PulseCheck keeps the previous detections.');
+    }
+    const endpoint = `${run.url.replace(/\/+$/, '')}/functions/v1/ci-inventory-result`;
+    let res;
+    try {
+        res = await fetch(endpoint, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${run.token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+    }
+    catch (err) {
+        io.warning(`Could not record the AI usage inventory with PulseCheck: ${message(err)}`);
+        return;
+    }
+    if (res.status === 401 || res.status === 403) {
+        io.warning(`PulseCheck refused the AI usage inventory (HTTP ${res.status}): ${refusalReason(res.status, await errorCodeOf(res))}`);
+        return;
+    }
+    if (!res.ok) {
+        io.warning(`Could not record the AI usage inventory with PulseCheck: ci-inventory-result returned HTTP ${res.status}.`);
+        return;
+    }
+    let body = null;
+    try {
+        body = await res.json();
+    }
+    catch {
+        body = null;
+    }
+    if (body && typeof body === 'object' && body.stored === false) {
+        io.info('PulseCheck did not store this AI usage inventory: AI change control is not switched on for this organization.');
+        return;
+    }
+    io.info(`Recorded ${payload.observations.length} observation(s) of AI usage with PulseCheck.`);
 }
 
 ;// CONCATENATED MODULE: ./src/checkRun.ts
-const CHECK_NAME = 'Data Compliance Gate';
+/**
+ * Publishes the GitHub check run that branch protection can require to block a
+ * merge. Verdict → conclusion mapping is the load-bearing decision:
+ *   fail → failure (blocks a required check)
+ *   pass → success
+ *   needs_review → neutral (advisory; surfaces findings without hard-blocking)
+ *
+ * The summary lists only masked evidence — it is rendered in the GitHub UI, so
+ * it must never contain a raw value.
+ */
+
 /**
  * Make any value safe to drop into one markdown table cell.
  *
@@ -41032,8 +41865,22 @@ function verdictToConclusion(verdict) {
         return 'success';
     return 'neutral';
 }
+/**
+ * The conclusion for one framework's check run. A framework that `fail-on` does not
+ * list is ADVISORY: its `fail` verdict is shown but concludes `neutral`, so a check
+ * the customer never asked to gate on can never block a merge by itself.
+ */
+function checkRunConclusion(verdict, advisory) {
+    const conclusion = verdictToConclusion(verdict);
+    return advisory && conclusion === 'failure' ? 'neutral' : conclusion;
+}
+/** A finding's article references: schema-2 `articles`, else the legacy `gdpr_article`. */
+function articlesOf(f) {
+    return f.articles ?? f.gdpr_article ?? [];
+}
 /** Render a masked-only markdown summary. Safe to display in the GitHub UI. */
-function buildSummary(result) {
+function buildSummary(result, framework = DEFAULT_FRAMEWORK) {
+    const info = FRAMEWORK_INFO[framework];
     const lines = [];
     const counts = result.findings.reduce((acc, f) => {
         acc[f.action] = (acc[f.action] ?? 0) + 1;
@@ -41044,14 +41891,14 @@ function buildSummary(result) {
     if (result.findings.length > 0) {
         // GitHub caps the summary at 65535 chars; clamp rows so checks.create never fails.
         const MAX_ROWS = 100;
-        lines.push('', '| Action | Rule | GDPR | Evidence (masked) |', '| --- | --- | --- | --- |');
+        lines.push('', `| Action | Rule | ${info.articlesLabel} | Evidence (masked) |`, '| --- | --- | --- | --- |');
         for (const f of result.findings.slice(0, MAX_ROWS)) {
             // EVERY cell is de-fanged, not just the evidence. `rule_id` comes from the
             // org's ruleset and was interpolated raw: an id containing `|` and a
             // newline could close the row and FORGE AN EXTRA ONE — an independent
             // review produced a fake row reading "ALL CLEAR" in the official gate
             // summary. `gdpr_article` is org-controlled too.
-            lines.push(`| ${cell(f.action)} | ${cell(f.rule_id)} | ${cell((f.gdpr_article ?? []).join(', '))} | ${cell(f.masked_evidence)} |`);
+            lines.push(`| ${cell(f.action)} | ${cell(f.rule_id)} | ${cell(articlesOf(f).join(', '))} | ${cell(f.masked_evidence)} |`);
         }
         if (result.findings.length > MAX_ROWS) {
             lines.push('', `_…and ${result.findings.length - MAX_ROWS} more findings (truncated for display)._`);
@@ -41063,29 +41910,123 @@ function buildSummary(result) {
     if (result.warnings.length > 0) {
         lines.push('', '**Warnings:**', ...result.warnings.map((w) => `- ${w}`));
     }
-    lines.push('', '_Scanned in your CI by the PulseCheck Data Compliance Gate. Raw diff and PII never leave this runner._');
+    lines.push('', framework === DEFAULT_FRAMEWORK
+        ? '_Scanned in your CI by the PulseCheck Data Compliance Gate. Raw diff and PII never leave this runner._'
+        : '_Scanned in your CI by PulseCheck. Raw diff and PII never leave this runner. Findings are signals to review, not a legal conclusion._');
     return lines.join('\n');
 }
 async function publishCheckRun(octokit, input) {
-    const conclusion = verdictToConclusion(input.result.verdict);
+    const framework = input.framework ?? DEFAULT_FRAMEWORK;
+    const info = FRAMEWORK_INFO[framework];
+    const conclusion = checkRunConclusion(input.result.verdict, input.advisory ?? false);
     await octokit.rest.checks.create({
         owner: input.owner,
         repo: input.repo,
-        name: CHECK_NAME,
+        name: info.checkRunName,
         head_sha: input.headSha,
         status: 'completed',
         conclusion,
         output: {
-            title: `Data Compliance: ${input.result.verdict}`,
-            summary: buildSummary(input.result),
+            title: `${info.title}: ${input.result.verdict}`,
+            summary: buildSummary(input.result, framework),
         },
     });
     return conclusion;
 }
 
 ;// CONCATENATED MODULE: ./src/report.ts
+/**
+ * Posts the masked verdict back to PulseCheck. Best-effort by design: a failure
+ * here never blocks the pipeline and never changes the already-published check
+ * run. The body contains ONLY masked findings, never raw evidence.
+ *
+ * Two body shapes exist. A legacy server (which answered the ruleset request with
+ * the single legacy ruleset) only understands the original one-verdict body, so
+ * that is what it gets, for the Data Compliance outcome. A schema-2 server gets one
+ * result per framework. If a schema-2 post is refused with HTTP 400 (a mixed
+ * deployment where the ruleset function is newer than the ingest function), or with a
+ * 5xx while it carries another framework's verdict (an EU AI Act verification that could
+ * not read the registry answers 503 for the WHOLE post), it is retried ONCE in the legacy
+ * shape so the GDPR verdict is still recorded, and the frameworks that were dropped are
+ * named (notRecorded) so the loss is loud. A server that stores part of a post itself
+ * says so with `not_recorded` in its 200 body; that is surfaced the same way.
+ */
+
+
+
+const SEVERITY = { block: 0, review: 1, advise: 2 };
+const clampText = (v) => (v.length > POST_LIMITS.maxFieldChars ? v.slice(0, POST_LIMITS.maxFieldChars) : v);
+const clampList = (v) => v?.slice(0, POST_LIMITS.maxListItems).map(clampText);
+/**
+ * What of a result is POSTED. The server stores at most POST_LIMITS.maxFindings findings
+ * per framework and clamps long fields; a post over those limits used to be rejected
+ * outright, which would have recorded NOTHING for the very largest (failing) scans. So
+ * the Action keeps the most severe findings (block, then review, then advise) and trims
+ * long fields itself. An ordinary scan is returned unchanged, element for element, except that
+ * 8+ digit runs in masked_evidence are grouped (N1).
+ * The verdict is never touched, and the check run still shows the full result.
+ */
+function clampFindingsForPost(findings) {
+    const kept = findings.length > POST_LIMITS.maxFindings
+        ? findings
+            .map((f, i) => ({ f, i }))
+            .sort((a, b) => (SEVERITY[a.f.action] ?? 3) - (SEVERITY[b.f.action] ?? 3) || a.i - b.i)
+            .slice(0, POST_LIMITS.maxFindings)
+            .map((x) => x.f)
+        : findings;
+    return kept.map((f) => ({
+        ...f,
+        rule_id: clampText(f.rule_id),
+        // Grouped BEFORE clamping: grouping lengthens the string, and a cut can never create a digit run.
+        masked_evidence: clampText(groupLongDigitRuns(f.masked_evidence)),
+        ...(f.gdpr_article ? { gdpr_article: clampList(f.gdpr_article) } : {}),
+        ...(f.articles ? { articles: clampList(f.articles) } : {}),
+    }));
+}
+/** The original one-verdict body. Field order matches what the Action has always sent. */
+function buildLegacyPayload(base, outcome) {
+    return {
+        repo: base.repo,
+        pr_number: base.pr_number,
+        commit_sha: base.commit_sha,
+        ruleset_version: outcome.ruleset.ruleset_version,
+        ruleset_hash: outcome.ruleset.ruleset_hash,
+        verdict: outcome.result.verdict,
+        findings: clampFindingsForPost(outcome.result.findings),
+    };
+}
+/** The multi-framework body: one independent result per framework. */
+function buildSchema2Payload(base, outcomes) {
+    return {
+        repo: base.repo,
+        pr_number: base.pr_number,
+        commit_sha: base.commit_sha,
+        provider: base.provider ?? DEFAULT_PROVIDER,
+        results: outcomes.map((o) => ({
+            framework: o.framework,
+            ruleset_version: o.ruleset.ruleset_version,
+            ruleset_hash: o.ruleset.ruleset_hash,
+            verdict: o.result.verdict,
+            findings: clampFindingsForPost(o.result.findings),
+            ...(o.ruleset.context && o.ruleset.context_hash ? { context: o.ruleset.context, context_hash: o.ruleset.context_hash } : {}),
+        })),
+    };
+}
+const CODE_PATTERN = /^[a-z_]{1,40}$/;
+const plainCode = (v) => (typeof v === 'string' && CODE_PATTERN.test(v) ? v : undefined);
+/** `not_recorded` of a 2xx body: the known frameworks the server did not store, and the first plain code. */
+function readNotRecorded(body) {
+    const list = body?.not_recorded;
+    if (!Array.isArray(list))
+        return {};
+    const entries = list.filter((e) => typeof e === 'object' && e !== null && isFramework(e.framework));
+    if (entries.length === 0)
+        return {};
+    const code = entries.map((e) => plainCode(e.code)).find((c) => c !== undefined);
+    return { notRecorded: entries.map((e) => e.framework), ...(code ? { code } : {}) };
+}
 /** POST `${url}/functions/v1/ci-scan-result` with a bearer token. Never throws. */
-async function postResult(url, token, payload) {
+async function postBody(url, token, payload) {
     const base = url.replace(/\/+$/, '');
     const endpoint = `${base}/functions/v1/ci-scan-result`;
     try {
@@ -41098,31 +42039,416 @@ async function postResult(url, token, payload) {
             },
             body: JSON.stringify(payload),
         });
+        const body = await Promise.resolve().then(() => res.json()).then((b) => b, () => undefined);
         if (!res.ok) {
-            return { ok: false, status: res.status, error: `ci-scan-result returned HTTP ${res.status}` };
+            const code = plainCode(body?.error?.code);
+            return {
+                ok: false,
+                status: res.status,
+                error: `ci-scan-result returned HTTP ${res.status}`,
+                ...(code ? { code } : {}),
+            };
         }
-        return { ok: true, status: res.status };
+        return { ok: true, status: res.status, ...readNotRecorded(body) };
     }
     catch (err) {
         return { ok: false, error: err?.message ?? String(err) };
     }
+}
+/** A refused schema-2 post worth retrying in the legacy shape: 400 (an older ingest), or 5xx with more to lose. */
+const shouldRetryLegacy = (status, hasOtherFrameworks) => status === 400 || (status !== undefined && status >= 500 && hasOtherFrameworks);
+/** Post every framework's verdict in the shape the server understands. Never throws. */
+async function postResults(url, token, base, outcomes, shape) {
+    const gdpr = outcomes.find((o) => o.framework === DEFAULT_FRAMEWORK);
+    const provider = base.provider ?? DEFAULT_PROVIDER;
+    // The legacy body has no provider field, and the server reads an absent provider as GitHub: posting a GitLab merge
+    // request that way would store it as a GitHub pull request of the same path, shadowing a real one. So for any other
+    // provider a legacy-only server gets nothing, and a refused schema-2 post is never retried in the legacy shape.
+    if (provider !== DEFAULT_PROVIDER && shape === 'legacy') {
+        return {
+            ok: false,
+            error: `This PulseCheck server predates ${PROVIDER_LABEL[provider]} support, so the verdict was not recorded. ` +
+                'Nothing was sent, because the older request format would have stored it as a GitHub pull request',
+        };
+    }
+    if (shape === 'legacy') {
+        // A legacy server has only the GDPR stream; there is nothing else it could store.
+        return gdpr ? postBody(url, token, buildLegacyPayload(base, gdpr)) : { ok: true };
+    }
+    // The legacy body can only carry the GDPR verdict: name the frameworks it drops, so a refused schema-2 post
+    // (a context mismatch, an unmasked string, a registry that could not be read) is never a SILENT loss.
+    const notRecorded = outcomes.map((o) => o.framework).filter((f) => f !== DEFAULT_FRAMEWORK);
+    const first = await postBody(url, token, buildSchema2Payload(base, outcomes));
+    // A 5xx is retried only when another framework rode along: a GDPR-only post would just be re-sent as it was
+    // (and a 5xx raised after the row was stored would store it twice).
+    if (first.ok || !gdpr || provider !== DEFAULT_PROVIDER || !shouldRetryLegacy(first.status, notRecorded.length > 0))
+        return first;
+    const retry = await postBody(url, token, buildLegacyPayload(base, gdpr));
+    if (!retry.ok || notRecorded.length === 0)
+        return retry;
+    return { ...retry, notRecorded, refusedStatus: first.status, ...(first.code ? { code: first.code } : {}) };
+}
+/** The warning for a partial record, or null. */
+function notRecordedWarning(post) {
+    if (!post.notRecorded || post.notRecorded.length === 0)
+        return null;
+    const names = post.notRecorded.map((f) => FRAMEWORK_INFO[f].title).join(', ');
+    if (post.refusedStatus === undefined) {
+        return `PulseCheck recorded the verdict post only in part${post.code ? ` (${post.code})` : ''}. NOT recorded: ${names}.`;
+    }
+    return `PulseCheck refused the multi-framework verdict post (HTTP ${post.refusedStatus}${post.code ? ` ${post.code}` : ''}); ` +
+        `only the Data Compliance verdict was recorded. NOT recorded: ${names}.`;
+}
+
+;// CONCATENATED MODULE: ./src/orchestrate.ts
+/**
+ * Pure orchestration of a multi-framework scan: one independent `scan()` per
+ * framework, each with its own verdict, findings and warnings, and the `fail-on`
+ * decision. Kept out of index.ts (which runs on import) so it is unit-tested.
+ *
+ * Per-framework verdicts are computed HERE, in the Action, and never
+ * reconstructed on the server from findings: the Action's warnings (which floor
+ * a verdict to needs_review) are never posted.
+ */
+
+
+/**
+ * Scan every ruleset against the same PR. Each call gets its own time budget;
+ * `scan()` resets all of its module state per call, so frameworks cannot leak
+ * findings or warnings into one another.
+ */
+function scanFrameworks(rulesets, input, failOn) {
+    return rulesets.map((ruleset) => ({
+        framework: ruleset.framework,
+        ruleset,
+        result: scan(ruleset, input),
+        advisory: !failOn.includes(ruleset.framework),
+    }));
+}
+/** Outcomes that must fail the step: a `fail` verdict in a framework `fail-on` lists. */
+function failingFrameworks(outcomes) {
+    return outcomes.filter((o) => !o.advisory && o.result.verdict === 'fail');
+}
+/**
+ * The outcome the action's `verdict` / `findings-count` outputs describe: the
+ * original GDPR stream when present (so those outputs mean what they always did),
+ * else the first.
+ */
+function primaryOutcome(outcomes) {
+    return outcomes.find((o) => o.framework === DEFAULT_FRAMEWORK) ?? outcomes[0];
+}
+
+;// CONCATENATED MODULE: ./src/core.ts
+/**
+ * Provider-neutral core of the Data Compliance Gate.
+ *
+ * Everything that happens once we know WHICH change to scan and HOW to talk to the
+ * source-control provider: read the diff, pull the rulesets, scan each framework,
+ * publish a verdict per framework, post the masked verdicts back, set the outputs
+ * and decide whether the step fails. A provider adapter (today only GitHub, see
+ * index.ts) supplies the two things that differ between providers.
+ *
+ * Policies (unchanged from the GitHub-only version, pinned by
+ * __tests__/githubEntry.characterization.test.ts):
+ *  - Ruleset fetch fails (PulseCheck unreachable) → publish a `neutral` verdict +
+ *    warning; never a silent pass, never a hard block (don't fail on an outage).
+ *  - Diff unreadable → same: needs_review/neutral, no post.
+ *  - verdict 'fail' in a framework `fail-on` lists → fail the step; any other
+ *    framework is advisory.
+ */
+
+
+
+
+/** How a framework is named in logs and failure messages ('Data Compliance Gate' is the name users already know). */
+function displayName(framework) {
+    return framework === DEFAULT_FRAMEWORK ? 'Data Compliance Gate' : FRAMEWORK_INFO[framework].title;
+}
+async function safePublish(adapter, io, publish, result, framework, advisory = false) {
+    // FEAT-09 · a backfill records its verdict but publishes nothing: a check run is a
+    // claim about a commit's CURRENT state, and stamping one onto an old merged commit
+    // rewrites history in the UI and can re-open a settled required-check decision.
+    if (!publish) {
+        io.info('publish-check-run is false — recording the verdict without publishing a check run.');
+        return 'skipped';
+    }
+    try {
+        return await adapter.publishVerdict(result, framework, advisory);
+    }
+    catch (err) {
+        io.warning(`Could not publish the check run: ${err?.message ?? err}`);
+        return 'neutral';
+    }
+}
+/**
+ * True when the server withheld a rule although this Action supports every capability it lists, and one of them
+ * is `context`: the server had no registry context to attach (no valid repository). Old servers sent bare ids
+ * (strings) here; those cannot be attributed and keep the original message.
+ */
+const CONTEXT_CAP = 'context';
+function isServerWithheld(dropped) {
+    const caps = dropped?.missing_caps;
+    if (!Array.isArray(caps) || caps.length === 0)
+        return false;
+    return caps.includes(CONTEXT_CAP) && caps.every((c) => typeof c === 'string' && SUPPORTED_CAPS.includes(c));
+}
+async function runGate(run, adapter, io) {
+    // Fetch the unified diff.
+    let diff = '';
+    let truncated = false;
+    try {
+        diff = await adapter.fetchDiff();
+        if (typeof diff === 'string' && diff.length > run.diffCap) {
+            diff = diff.slice(0, run.diffCap);
+            truncated = true;
+        }
+    }
+    catch (err) {
+        // Inability to read the diff is a "cannot scan" case, like a PulseCheck
+        // outage: report needs_review/neutral rather than hard-failing the merge.
+        const reason = err?.message ?? String(err);
+        io.warning(`Could not fetch the PR diff (${reason}). Reporting needs_review.`);
+        await safePublish(adapter, io, run.publishChecks, {
+            verdict: 'needs_review',
+            findings: [],
+            warnings: [`Diff unavailable: ${reason}`],
+        });
+        io.setOutput('verdict', 'needs_review');
+        return;
+    }
+    // Pull the active rulesets. A fetch failure is a transient/outage case: emit a
+    // neutral verdict + warning, never a silent pass and never a hard block.
+    let fetched;
+    try {
+        fetched = await fetchRulesets(run.url, run.token, SUPPORTED_CAPS, run.repo, run.provider);
+    }
+    catch (err) {
+        const reason = err instanceof RulesetFetchError ? err.message : String(err);
+        io.warning(`Could not reach PulseCheck to fetch the ruleset (${reason}). Reporting needs_review.`);
+        const degraded = {
+            verdict: 'needs_review',
+            findings: [],
+            warnings: [`PulseCheck unreachable: ${reason}`],
+        };
+        await safePublish(adapter, io, run.publishChecks, degraded);
+        io.setOutput('verdict', 'needs_review');
+        return; // do not fail the pipeline on a PulseCheck outage
+    }
+    for (const rs of fetched.rulesets) {
+        // A rule is withheld for one of two reasons: this Action lacks a capability it needs, or the Action HAS every
+        // capability and the server withheld the rule anyway because it could not attach what the rule grades with
+        // (no valid repository, so no registry context). Blaming the Action for the second sends people to upgrade
+        // an Action that is already current.
+        const withheld = rs.dropped_rules ?? [];
+        const serverSide = withheld.filter((d) => isServerWithheld(d));
+        const unsupported = withheld.length - serverSide.length;
+        if (unsupported > 0) {
+            io.info(`${rs.framework}: ${unsupported} rule(s) withheld because this Action does not support a capability they need.`);
+        }
+        if (serverSide.length > 0) {
+            io.info(`${rs.framework}: ${serverSide.length} rule(s) withheld: PulseCheck could not attach a registry context (no valid repository).`);
+        }
+        if (rs.context_rejected) {
+            io.warning(`${FRAMEWORK_INFO[rs.framework].title}: PulseCheck sent a registry context this Action could not use; it was ignored, so findings keep their declared action and no context is recorded.`);
+        }
+    }
+    for (const u of fetched.unavailable) {
+        const name = isFramework(u.framework) ? FRAMEWORK_INFO[u.framework].title : u.framework;
+        io.warning(`${name}: PulseCheck did not serve this ruleset in this run (${u.reason}), so it was not scanned.`);
+    }
+    // Scan each framework independently (own rules, own verdict, own warnings) and publish.
+    const outcomes = scanFrameworks(fetched.rulesets, { diff, prDescription: run.prDescription, truncated }, run.failOn);
+    const conclusions = new Map();
+    for (const o of outcomes) {
+        conclusions.set(o.framework, await safePublish(adapter, io, run.publishChecks, o.result, o.framework, o.advisory));
+    }
+    // Post the masked verdicts back (best-effort — never blocks, never leaks).
+    const post = await postResults(run.url, run.token, { repo: run.repo, pr_number: run.prNumber, commit_sha: run.headSha, ...(run.provider ? { provider: run.provider } : {}) }, outcomes, fetched.shape);
+    if (!post.ok) {
+        io.warning(post.code === 'token_scope_mismatch'
+            ? 'Could not record the verdict: this token is limited to other repositories or providers. Create a token for this repository in PulseCheck (Organization Settings, CI Gate).'
+            : `Could not record the verdict with PulseCheck: ${post.error}`);
+    }
+    const partial = notRecordedWarning(post);
+    if (partial)
+        io.warning(partial);
+    // The `verdict` / `findings-count` outputs keep meaning the original GDPR stream.
+    const primary = primaryOutcome(outcomes);
+    io.setOutput('verdict', primary?.result.verdict ?? 'needs_review');
+    io.setOutput('findings-count', String(primary?.result.findings.length ?? 0));
+    io.setOutput('verdicts', JSON.stringify(Object.fromEntries(outcomes.map((o) => [o.framework, o.result.verdict]))));
+    for (const o of outcomes) {
+        const prefix = o.framework === DEFAULT_FRAMEWORK ? '' : `${FRAMEWORK_INFO[o.framework].title}: `;
+        for (const w of o.result.warnings)
+            io.warning(`${prefix}${w}`);
+        io.info(`${displayName(o.framework)}: ${o.result.verdict} (check run conclusion: ${conclusions.get(o.framework)}).`);
+    }
+    // A blocking verdict fails the step too, so a job-level required check blocks
+    // the merge even when the check run itself is not the configured gate.
+    for (const o of failingFrameworks(outcomes)) {
+        io.setFailed(`${displayName(o.framework)} failed: ${o.result.findings.filter((f) => f.action === 'block').length} blocking finding(s).`);
+    }
+}
+
+;// CONCATENATED MODULE: external "node:child_process"
+const external_node_child_process_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:child_process");
+;// CONCATENATED MODULE: external "node:fs/promises"
+const promises_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:fs/promises");
+;// CONCATENATED MODULE: external "node:path"
+const external_node_path_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:path");
+;// CONCATENATED MODULE: ./src/gitCheckout.ts
+/**
+ * PR E · the checkout a baseline scan walks: `git ls-files` for the tracked files and the filesystem for their
+ * bytes. Only regular files are read (lstat, so a symlink is never followed out of the checkout, and a submodule's
+ * directory entry is skipped), and a path that would resolve outside the checkout is refused.
+ */
+
+
+
+/** ls-files output of a very large monorepo still fits; past this git's output is cut and the call fails loudly. */
+const MAX_LS_FILES_BYTES = 256 * 1024 * 1024;
+function git(dir, args, maxBuffer = 1024 * 1024) {
+    return new Promise((done, fail) => {
+        (0,external_node_child_process_namespaceObject.execFile)('git', ['-C', dir, ...args], { encoding: 'utf8', maxBuffer }, (err, stdout) => {
+            if (err)
+                fail(err);
+            else
+                done(stdout);
+        });
+    });
+}
+function gitCheckout(dir) {
+    const root = (0,external_node_path_namespaceObject.resolve)(dir);
+    /** The absolute path of a repo-relative one, or null when it would leave the checkout. */
+    const inside = (path) => {
+        const abs = (0,external_node_path_namespaceObject.resolve)(root, path);
+        const rel = (0,external_node_path_namespaceObject.relative)(root, abs);
+        if (rel === '' || rel === '..' || rel.startsWith(`..${external_node_path_namespaceObject.sep}`) || (0,external_node_path_namespaceObject.isAbsolute)(rel))
+            return null;
+        return abs;
+    };
+    return {
+        async listFiles() {
+            const out = await git(root, ['ls-files', '-z'], MAX_LS_FILES_BYTES);
+            return out.split('\0').filter((p) => p.length > 0);
+        },
+        async size(path) {
+            const abs = inside(path);
+            if (!abs)
+                return null;
+            try {
+                const st = await (0,promises_namespaceObject.lstat)(abs);
+                return st.isFile() ? st.size : null;
+            }
+            catch {
+                return null;
+            }
+        },
+        async read(path) {
+            const abs = inside(path);
+            if (!abs)
+                throw new Error('path outside the checkout');
+            return new Uint8Array(await (0,promises_namespaceObject.readFile)(abs));
+        },
+        async headSha() {
+            const sha = (await git(root, ['rev-parse', 'HEAD'])).trim();
+            if (!/^[0-9a-f]{40}([0-9a-f]{24})?$/.test(sha))
+                throw new Error('unexpected HEAD');
+            return sha;
+        },
+    };
+}
+
+;// CONCATENATED MODULE: ./src/prContext.ts
+/**
+ * FEAT-09 (docs/plans/rule-engine-findings.md §4) — let the gate scan a pull request
+ * that is named explicitly, not only the one that triggered the workflow.
+ *
+ * Everything downstream already works for merged pull requests: the diff endpoint
+ * serves them, the scanner does not care, and the report endpoint records against a
+ * PR number. Only the INPUT was missing, which is why a customer could not answer
+ * "what would this ruleset have said about our last six months?" without merging
+ * something first.
+ *
+ * TWO THINGS A BACKFILL MUST NOT DO, both encoded here:
+ *
+ * 1. **Stamp check runs onto old merged commits.** A check run is a claim about a
+ *    commit's current state; publishing one against a six-month-old merge rewrites
+ *    history in the UI and can re-open a settled required-check decision. Hence
+ *    `publishCheckRun`, which a backfill turns off while still recording the verdict.
+ *
+ * 2. **Pretend an explicit number is the event's PR.** When both are present the
+ *    explicit input wins — that is what the operator asked for — but the two are
+ *    never silently conflated, because the head SHA differs and a verdict recorded
+ *    against the wrong commit is worse than no verdict.
+ */
+/**
+ * Decide which pull request to scan.
+ *
+ * The explicit input wins over the event payload so a `workflow_dispatch` backfill can
+ * run inside a repository that also has `pull_request` triggers configured.
+ */
+function resolvePrRef(payloadPrNumber, rawInput) {
+    const trimmed = (rawInput ?? '').trim();
+    if (trimmed) {
+        // Deliberately strict: `22abc` or `-3` is a typo in a hand-typed dispatch field,
+        // and guessing at it would scan a pull request the operator did not name.
+        if (!/^\d+$/.test(trimmed)) {
+            return { prNumber: null, explicit: true, reason: 'invalid-input' };
+        }
+        const parsed = Number(trimmed);
+        if (!Number.isSafeInteger(parsed) || parsed <= 0) {
+            return { prNumber: null, explicit: true, reason: 'invalid-input' };
+        }
+        return { prNumber: parsed, explicit: true };
+    }
+    if (typeof payloadPrNumber === 'number' && Number.isSafeInteger(payloadPrNumber) && payloadPrNumber > 0) {
+        return { prNumber: payloadPrNumber, explicit: false };
+    }
+    return { prNumber: null, explicit: false, reason: 'no-pr-context' };
+}
+/**
+ * Whether to publish a check run for this run.
+ *
+ * Defaults to true so existing workflows are untouched. A backfill sets it false; an
+ * explicitly-numbered run does NOT suppress publication on its own, because scanning
+ * an open PR by number is a legitimate re-run whose check run is still wanted.
+ */
+function shouldPublishCheckRun(rawInput) {
+    const value = (rawInput ?? '').trim().toLowerCase();
+    if (!value)
+        return true;
+    return !(value === 'false' || value === 'no' || value === '0');
 }
 
 ;// CONCATENATED MODULE: ./src/index.ts
 /**
  * Data Compliance Gate — GitHub Action entrypoint (a dumb sensor).
  *
- * Flow: read inputs → resolve PR context → fetch the diff → pull the active
- * ruleset from PulseCheck → scan locally → publish a check run → post the masked
- * verdict back. No rules are baked in; raw diff/PII never leave this runner.
+ * This file is the GitHub ADAPTER: read inputs → resolve the PR (and its head SHA)
+ * from the event or the API → hand over to the provider-neutral core (core.ts),
+ * which fetches the diff, pulls the rulesets from PulseCheck (one per framework),
+ * scans each locally, publishes a verdict per framework and posts the masked
+ * verdicts back. No rules are baked in; raw diff/PII never leave this runner.
  *
  * Policies:
  *  - No token  → inert: no scan, no check run, no post, exit 0.
  *  - Ruleset fetch fails (PulseCheck unreachable) → publish a `neutral` check +
  *    warning; never a silent pass, never a hard block (don't fail on an outage).
- *  - verdict 'fail' → publish `failure` AND fail the step (the block); 'pass' →
- *    success; 'needs_review' → neutral (advisory).
+ *  - verdict 'fail' in a framework `fail-on` lists → publish `failure` AND fail the
+ *    step (the block); 'pass' → success; 'needs_review' → neutral (advisory). A
+ *    framework `fail-on` does not list is advisory: its check never concludes
+ *    `failure`. The default `fail-on` is the original 'Data Compliance' stream.
+ *  - An old server (no multi-framework support) is handled transparently: its
+ *    single ruleset is the 'Data Compliance' stream.
+ *
+ * `scan-mode: baseline` (PR E, AI usage inventory) takes a different path before any of
+ * the above: no pull request, no check run, no verdict, `fail-on` ignored. It walks the
+ * checked-out tree and posts aggregate counts only (baselineRun.ts), and never fails the
+ * step. An invalid `scan-mode` value is the one thing that fails it, before anything runs.
  */
+
+
 
 
 
@@ -41131,111 +42457,112 @@ async function postResult(url, token, payload) {
 
 const DEFAULT_URL = 'https://nmvlxonedqnejdevrchx.supabase.co';
 async function run() {
+    const mode = parseScanMode(getInput('scan-mode'));
+    if ('error' in mode) {
+        setFailed(mode.error);
+        return;
+    }
+    if (mode.mode === 'baseline')
+        return runBaselineMode();
+    return runPr();
+}
+/** `scan-mode: baseline`: inventory the checked-out tree. Never fails the step (see baselineRun.ts). */
+async function runBaselineMode() {
+    const token = getInput('pulsecheck-token');
+    const url = getInput('pulsecheck-url') || DEFAULT_URL;
+    if (!token) {
+        info('No pulsecheck-token provided — Data Compliance Gate is inert (no baseline scan, nothing recorded).');
+        return;
+    }
+    const samplePaths = parseSamplePaths(getInput('baseline-sample-paths'));
+    if (samplePaths.warning)
+        warning(samplePaths.warning);
+    const { owner, repo } = github_context.repo;
+    await runBaseline({ url, token, repo: `${owner}/${repo}`, samplePaths: samplePaths.value, fallbackSha: github_context.sha }, gitCheckout(process.env.GITHUB_WORKSPACE || process.cwd()), core_namespaceObject);
+}
+/** `scan-mode: pr` (the default): the pull request gate, unchanged. */
+async function runPr() {
     const token = getInput('pulsecheck-token');
     const url = getInput('pulsecheck-url') || DEFAULT_URL;
     const githubToken = getInput('github-token');
     const parsedCap = Number(getInput('diff-cap-bytes') || '5000000');
     const diffCap = Number.isFinite(parsedCap) && parsedCap > 0 ? parsedCap : 5000000;
+    const { failOn, unknown: unknownFailOn } = parseFailOn(getInput('fail-on'));
+    for (const name of unknownFailOn)
+        warning(`fail-on: unknown framework "${name}" was ignored.`);
     // Inert without a token — the brain is server-side and auth-gated.
     if (!token) {
         info('No pulsecheck-token provided — Data Compliance Gate is inert (no scan, no verdict).');
         return;
     }
+    // FEAT-09 · an explicitly named pull request wins over the event payload, so a
+    // workflow_dispatch backfill works in a repo that also runs on pull_request.
     const pr = github_context.payload.pull_request;
-    if (!pr) {
-        info('No pull_request in the event payload — nothing to scan.');
+    const ref = resolvePrRef(pr?.number, getInput('pr-number'));
+    if (ref.reason === 'invalid-input') {
+        setFailed("pr-number must be a positive whole number (e.g. '22').");
+        return;
+    }
+    if (ref.prNumber === null) {
+        info('No pull_request in the event payload and no pr-number input — nothing to scan.');
         return;
     }
     const { owner, repo } = github_context.repo;
-    const prNumber = pr.number;
-    const headSha = pr.head.sha;
-    const prDescription = pr.body ?? '';
+    const prNumber = ref.prNumber;
+    const publishChecks = shouldPublishCheckRun(getInput('publish-check-run'));
     if (!githubToken) {
         setFailed('github-token is required to fetch the diff and publish the check run.');
         return;
     }
     const octokit = getOctokit(githubToken);
-    // Fetch the unified diff via the API (no shelling out).
-    let diff = '';
-    let truncated = false;
-    try {
-        const res = await octokit.rest.pulls.get({
-            owner,
-            repo,
-            pull_number: prNumber,
-            mediaType: { format: 'diff' },
-        });
-        diff = res.data;
-        if (typeof diff === 'string' && diff.length > diffCap) {
-            diff = diff.slice(0, diffCap);
-            truncated = true;
+    // With an explicit number the event payload carries nothing about that PR, so its
+    // head SHA and body have to be fetched. A merged PR answers this endpoint exactly
+    // as an open one does, which is why the backfill needed no server-side change.
+    let headSha;
+    let prDescription;
+    if (ref.explicit) {
+        try {
+            const meta = await octokit.rest.pulls.get({ owner, repo, pull_number: prNumber });
+            headSha = meta.data.head.sha;
+            prDescription = meta.data.body ?? '';
+            if (meta.data.merged) {
+                info(`Pull request #${prNumber} is merged — scanning it as a backfill.`);
+            }
+        }
+        catch (err) {
+            setFailed(`Could not read pull request #${prNumber}: ${err?.message ?? err}`);
+            return;
         }
     }
-    catch (err) {
-        // Inability to read the diff is a "cannot scan" case, like a PulseCheck
-        // outage: report needs_review/neutral rather than hard-failing the merge.
-        const reason = err?.message ?? String(err);
-        warning(`Could not fetch the PR diff (${reason}). Reporting needs_review.`);
-        await safePublish(octokit, owner, repo, headSha, {
-            verdict: 'needs_review',
-            findings: [],
-            warnings: [`Diff unavailable: ${reason}`],
-        });
-        setOutput('verdict', 'needs_review');
-        return;
+    else {
+        headSha = pr.head.sha;
+        prDescription = pr.body ?? '';
     }
-    // Pull the active ruleset. A fetch failure is a transient/outage case: emit a
-    // neutral check + warning, never a silent pass and never a hard block.
-    let ruleset;
-    try {
-        ruleset = await fetchRuleset(url, token);
-    }
-    catch (err) {
-        const reason = err instanceof RulesetFetchError ? err.message : String(err);
-        warning(`Could not reach PulseCheck to fetch the ruleset (${reason}). Reporting needs_review.`);
-        const degraded = {
-            verdict: 'needs_review',
-            findings: [],
-            warnings: [`PulseCheck unreachable: ${reason}`],
-        };
-        await safePublish(octokit, owner, repo, headSha, degraded);
-        setOutput('verdict', 'needs_review');
-        return; // do not fail the pipeline on a PulseCheck outage
-    }
-    // Scan locally and publish.
-    const result = scan(ruleset, { diff, prDescription, truncated });
-    const conclusion = await safePublish(octokit, owner, repo, headSha, result);
-    // Post the masked verdict back (best-effort — never blocks, never leaks).
-    const post = await postResult(url, token, {
+    // The two provider-specific parts: how to read the diff (via the API, no shelling
+    // out) and how to show a verdict (a check run). Everything else is the core.
+    const adapter = {
+        async fetchDiff() {
+            const res = await octokit.rest.pulls.get({
+                owner,
+                repo,
+                pull_number: prNumber,
+                mediaType: { format: 'diff' },
+            });
+            return res.data;
+        },
+        publishVerdict: (result, framework, advisory) => publishCheckRun(octokit, { owner, repo, headSha, result, framework, advisory }),
+    };
+    await runGate({
+        url,
+        token,
+        failOn,
+        diffCap,
+        publishChecks,
         repo: `${owner}/${repo}`,
-        pr_number: prNumber,
-        commit_sha: headSha,
-        ruleset_version: ruleset.ruleset_version,
-        ruleset_hash: ruleset.ruleset_hash,
-        verdict: result.verdict,
-        findings: result.findings,
-    });
-    if (!post.ok)
-        warning(`Could not record the verdict with PulseCheck: ${post.error}`);
-    setOutput('verdict', result.verdict);
-    setOutput('findings-count', String(result.findings.length));
-    for (const w of result.warnings)
-        warning(w);
-    info(`Data Compliance Gate: ${result.verdict} (check run conclusion: ${conclusion}).`);
-    // A blocking verdict fails the step too, so a job-level required check blocks
-    // the merge even when the check run itself is not the configured gate.
-    if (result.verdict === 'fail') {
-        setFailed(`Data Compliance Gate failed: ${result.findings.filter((f) => f.action === 'block').length} blocking finding(s).`);
-    }
-}
-async function safePublish(octokit, owner, repo, headSha, result) {
-    try {
-        return await publishCheckRun(octokit, { owner, repo, headSha, result });
-    }
-    catch (err) {
-        warning(`Could not publish the check run: ${err?.message ?? err}`);
-        return 'neutral';
-    }
+        prNumber,
+        headSha,
+        prDescription,
+    }, adapter, core_namespaceObject);
 }
 run().catch((err) => {
     setFailed(`Data Compliance Gate crashed: ${err?.message ?? err}`);

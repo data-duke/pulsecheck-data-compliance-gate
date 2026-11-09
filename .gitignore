@@ -1,2 +1,6 @@
 node_modules/
 # dist/ is intentionally committed — it is the action's runtime entrypoint.
+# The CLI bundle (cli/dist/) is NOT committed: scripts/publish-gate-cli.sh builds it from src/ at release time.
+cli/dist/
+cli/LICENSE
+cli/*.tgz

@@ -8,9 +8,8 @@
  * The summary lists only masked evidence — it is rendered in the GitHub UI, so
  * it must never contain a raw value.
  */
-import type { ScanResult, Verdict } from './types.js';
-
-const CHECK_NAME = 'Data Compliance Gate';
+import { DEFAULT_FRAMEWORK, FRAMEWORK_INFO, type FrameworkId } from './frameworks.js';
+import type { Finding, ScanResult, Verdict } from './types.js';
 
 type Conclusion = 'success' | 'failure' | 'neutral';
 
@@ -47,6 +46,21 @@ export function verdictToConclusion(verdict: Verdict): Conclusion {
   return 'neutral';
 }
 
+/**
+ * The conclusion for one framework's check run. A framework that `fail-on` does not
+ * list is ADVISORY: its `fail` verdict is shown but concludes `neutral`, so a check
+ * the customer never asked to gate on can never block a merge by itself.
+ */
+export function checkRunConclusion(verdict: Verdict, advisory: boolean): Conclusion {
+  const conclusion = verdictToConclusion(verdict);
+  return advisory && conclusion === 'failure' ? 'neutral' : conclusion;
+}
+
+/** A finding's article references: schema-2 `articles`, else the legacy `gdpr_article`. */
+function articlesOf(f: Finding): string[] {
+  return f.articles ?? f.gdpr_article ?? [];
+}
+
 interface OctokitLike {
   rest: {
     checks: {
@@ -60,10 +74,15 @@ export interface CheckRunInput {
   repo: string;
   headSha: string;
   result: ScanResult;
+  /** Which framework's check this is. Omitted = the original 'Data Compliance Gate'. */
+  framework?: FrameworkId;
+  /** True when `fail-on` does not list the framework: the check can never conclude `failure`. */
+  advisory?: boolean;
 }
 
 /** Render a masked-only markdown summary. Safe to display in the GitHub UI. */
-export function buildSummary(result: ScanResult): string {
+export function buildSummary(result: ScanResult, framework: FrameworkId = DEFAULT_FRAMEWORK): string {
+  const info = FRAMEWORK_INFO[framework];
   const lines: string[] = [];
   const counts = result.findings.reduce<Record<string, number>>((acc, f) => {
     acc[f.action] = (acc[f.action] ?? 0) + 1;
@@ -76,7 +95,7 @@ export function buildSummary(result: ScanResult): string {
   if (result.findings.length > 0) {
     // GitHub caps the summary at 65535 chars; clamp rows so checks.create never fails.
     const MAX_ROWS = 100;
-    lines.push('', '| Action | Rule | GDPR | Evidence (masked) |', '| --- | --- | --- | --- |');
+    lines.push('', `| Action | Rule | ${info.articlesLabel} | Evidence (masked) |`, '| --- | --- | --- | --- |');
     for (const f of result.findings.slice(0, MAX_ROWS)) {
       // EVERY cell is de-fanged, not just the evidence. `rule_id` comes from the
       // org's ruleset and was interpolated raw: an id containing `|` and a
@@ -84,7 +103,7 @@ export function buildSummary(result: ScanResult): string {
       // review produced a fake row reading "ALL CLEAR" in the official gate
       // summary. `gdpr_article` is org-controlled too.
       lines.push(
-        `| ${cell(f.action)} | ${cell(f.rule_id)} | ${cell((f.gdpr_article ?? []).join(', '))} | ${cell(f.masked_evidence)} |`,
+        `| ${cell(f.action)} | ${cell(f.rule_id)} | ${cell(articlesOf(f).join(', '))} | ${cell(f.masked_evidence)} |`,
       );
     }
     if (result.findings.length > MAX_ROWS) {
@@ -96,7 +115,12 @@ export function buildSummary(result: ScanResult): string {
   if (result.warnings.length > 0) {
     lines.push('', '**Warnings:**', ...result.warnings.map((w) => `- ${w}`));
   }
-  lines.push('', '_Scanned in your CI by the PulseCheck Data Compliance Gate. Raw diff and PII never leave this runner._');
+  lines.push(
+    '',
+    framework === DEFAULT_FRAMEWORK
+      ? '_Scanned in your CI by the PulseCheck Data Compliance Gate. Raw diff and PII never leave this runner._'
+      : '_Scanned in your CI by PulseCheck. Raw diff and PII never leave this runner. Findings are signals to review, not a legal conclusion._',
+  );
   return lines.join('\n');
 }
 
@@ -104,17 +128,19 @@ export async function publishCheckRun(
   octokit: OctokitLike,
   input: CheckRunInput,
 ): Promise<Conclusion> {
-  const conclusion = verdictToConclusion(input.result.verdict);
+  const framework = input.framework ?? DEFAULT_FRAMEWORK;
+  const info = FRAMEWORK_INFO[framework];
+  const conclusion = checkRunConclusion(input.result.verdict, input.advisory ?? false);
   await octokit.rest.checks.create({
     owner: input.owner,
     repo: input.repo,
-    name: CHECK_NAME,
+    name: info.checkRunName,
     head_sha: input.headSha,
     status: 'completed',
     conclusion,
     output: {
-      title: `Data Compliance: ${input.result.verdict}`,
-      summary: buildSummary(input.result),
+      title: `${info.title}: ${input.result.verdict}`,
+      summary: buildSummary(input.result, framework),
     },
   });
   return conclusion;

@@ -21,6 +21,7 @@ import {
   Verdict,
   ScanResult,
   AllowlistSpec,
+  AppliesWhen,
 } from './types.js';
 
 /**
@@ -28,7 +29,7 @@ import {
  * lockfiles, build output, vendored deps and minified bundles — high-noise,
  * low-signal surfaces where a "match" is almost never a real PII leak.
  */
-const ALWAYS_EXCLUDE: RegExp[] = [
+export const ALWAYS_EXCLUDE: readonly RegExp[] = [
   /(^|\/)package-lock\.json$/,
   /(^|\/)yarn\.lock$/,
   /(^|\/)dist\//,
@@ -62,6 +63,27 @@ interface RawFinding {
   /** Effective action after any downgrade (block→review etc). */
   effectiveAction: 'block' | 'review' | 'advise';
   maskedEvidence: string;
+  /** Where it was seen. Never posted; read back through `findingLocations` (see below). Absent for the PR description. */
+  file?: string;
+  line?: number | null;
+}
+
+/** Where a finding was seen, for the one consumer that shows it on a provider (the GitLab Code Quality report). */
+export interface FindingLocation {
+  file: string | null;
+  line: number | null;
+}
+
+/**
+ * Locations are kept beside the result, never in it: `Finding` is the wire contract of ci-scan-result, and a new field
+ * would be posted, stored and compared by every test that does `toEqual` on a result. A WeakMap keyed by the result
+ * object adds nothing to the result, to its JSON, to a payload or to a check run. Index-aligned with `result.findings`.
+ */
+const LOCATIONS = new WeakMap<ScanResult, FindingLocation[]>();
+
+/** The location of each finding of `result`, in the order of `result.findings`; [] for a result `scan()` did not produce. */
+export function findingLocations(result: ScanResult): FindingLocation[] {
+  return LOCATIONS.get(result) ?? [];
 }
 
 const JS_REGEX_FLAGS = new Set(['g', 'i', 'm', 's', 'u', 'y', 'd']);
@@ -88,8 +110,11 @@ function resolvePattern(pattern: string, extraFlags: string): { source: string; 
   return { source: remainder, flags: [...new Set([...prefixFlags, ...extraFlags])].join('') };
 }
 
-/** Compile a regex from a rule pattern; returns null if absent/invalid. */
-function compile(pattern: string | undefined, flags = 'g'): RegExp | null {
+/**
+ * Compile a regex from a rule pattern; returns null if absent/invalid. Exported so the baseline walker
+ * (baseline.ts) compiles rule patterns exactly as this scan does.
+ */
+export function compile(pattern: string | undefined, flags = 'g'): RegExp | null {
   if (!pattern) return null;
   const resolved = resolvePattern(pattern, flags);
   if (!resolved) return null;
@@ -221,7 +246,7 @@ function noteSuppression(ruleId: string): void {
  * Found by independent review; the author's own review asserted "no `g` flag"
  * from reading the call site and missed that the pattern can supply one.
  */
-function stripStatefulFlags(re: RegExp | null): RegExp | null {
+export function stripStatefulFlags(re: RegExp | null): RegExp | null {
   if (!re) return null;
   if (!re.global && !re.sticky) return re;
   return new RegExp(re.source, re.flags.replace(/[gy]/g, ''));
@@ -341,14 +366,14 @@ export function unusablePatternFields(rule: Rule): string[] {
     .map(([field]) => field);
 }
 
-/** A line is in scope if it matches any file_scope glob (or scope is empty). */
-function matchesFileScope(file: string, fileScope: string[] | undefined): boolean {
+/** A line is in scope if it matches any file_scope glob (or scope is empty). Shared with baseline.ts. */
+export function matchesFileScope(file: string, fileScope: string[] | undefined): boolean {
   if (!fileScope || fileScope.length === 0) return true;
   return fileScope.some((glob) => globToRegExp(glob).test(file));
 }
 
-/** A line is excluded if any rule exclude path OR any always-exclude matches. */
-function isExcluded(file: string, excludePaths: string[] | undefined): boolean {
+/** A line is excluded if any rule exclude path OR any always-exclude matches. Shared with baseline.ts. */
+export function isExcluded(file: string, excludePaths: string[] | undefined): boolean {
   if (ALWAYS_EXCLUDE.some((re) => re.test(file))) return true;
   if (excludePaths && excludePaths.some((glob) => globToRegExp(glob).test(file))) {
     return true;
@@ -463,7 +488,7 @@ function outOfBudget(): boolean {
  * verdict floors to needs_review. Not scanning something must never read as a
  * clean pass — the same rule the truncated-diff and budget paths already follow.
  */
-const MAX_SCAN_LINE_CHARS = 8192;
+export const MAX_SCAN_LINE_CHARS = 8192;
 
 /**
  * Characters scanned between wall-clock budget checks.
@@ -639,6 +664,17 @@ function globToRegExp(glob: string): RegExp {
   }
 
   return remember(compiled, null);
+}
+
+/**
+ * Why this scanner refuses a path glob ('complex' or 'blanket'; a refused glob matches nothing), or null when it
+ * compiles normally. For the baseline walker (baseline.ts), which has to warn about the same refusals. Reads the
+ * same cache globToRegExp fills; its per-scan refusal sets are reset by every scan() call, so a call from here
+ * cannot leak a warning into a PR scan.
+ */
+export function globRefusal(glob: string): 'complex' | 'blanket' | null {
+  globToRegExp(glob);
+  return GLOB_CACHE.get(glob)?.refusal ?? null;
 }
 
 /**
@@ -866,6 +902,9 @@ function evaluateSignature(
           rule,
           effectiveAction: rule.action,
           maskedEvidence: maskFinding(`${rule.detect.mask}:${sigLabel(token)}`, token, line.file, line.lineNo),
+          file: line.file,
+          // A removed line's number is its OLD-file position, which means nothing on the new file the report points at.
+          line: line.side === 'removed' ? null : line.lineNo,
         });
         break; // one finding per line is enough
       }
@@ -972,6 +1011,8 @@ function evaluatePaired(
         pair.plus.file,
         pair.plus.lineNo,
       ),
+      file: pair.plus.file,
+      line: pair.plus.lineNo,
     });
   }
   return findings;
@@ -1053,6 +1094,9 @@ function evaluateLinePattern(
         rule,
         effectiveAction,
         maskedEvidence: maskLineEvidence(rule, value, line),
+        file: line.file,
+        // A removed line's number is its OLD-file position, which means nothing on the new file the report points at.
+          line: line.side === 'removed' ? null : line.lineNo,
       });
     }
   }
@@ -1272,6 +1316,46 @@ function gradeAction(
   return action;
 }
 
+const ACTION_SEVERITY: Record<'block' | 'review' | 'advise', number> = { block: 0, review: 1, advise: 2 };
+
+/**
+ * `detect.applies_when` grading (capability `context`). The FIRST entry whose every `when` key equals the
+ * context value (strict ===) applies, and it can only LOWER a finding's action, never raise it. No context, no
+ * matching entry, or an unreadable `applies_when` leaves every finding exactly as evaluated. Matching is
+ * untouched: this runs after the evaluator, on its findings, so the context changes grading only.
+ */
+function gradeByContext(
+  rule: Rule,
+  findings: RawFinding[],
+  context: Record<string, unknown> | null | undefined,
+  warnings: string[],
+): RawFinding[] {
+  const spec = rule.detect.applies_when;
+  if (spec === undefined || findings.length === 0) return findings;
+  if (!Array.isArray(spec) || !spec.every(isUsableAppliesWhen)) {
+    warnings.push(
+      `Rule "${sanitizeRuleId(rule.id)}" declares an applies_when this Action cannot read; ` +
+      'its findings keep their declared action.',
+    );
+    return findings;
+  }
+  if (!context || typeof context !== 'object' || Array.isArray(context)) return findings;
+  const entry = spec.find((e) => Object.entries(e.when).every(([k, v]) => context[k] === v));
+  if (!entry) return findings;
+  return findings.map((f) =>
+    ACTION_SEVERITY[entry.action] > ACTION_SEVERITY[f.effectiveAction] ? { ...f, effectiveAction: entry.action } : f,
+  );
+}
+
+function isUsableAppliesWhen(e: unknown): e is AppliesWhen {
+  if (!e || typeof e !== 'object' || Array.isArray(e)) return false;
+  const { when, action } = e as Record<string, unknown>;
+  if (action !== 'review' && action !== 'advise') return false;
+  if (!when || typeof when !== 'object' || Array.isArray(when)) return false;
+  const keys = Object.keys(when as object);
+  return keys.length > 0 && keys.every((k) => typeof (when as Record<string, unknown>)[k] === 'boolean');
+}
+
 /** Downgrade an action one severity step. */
 function downgrade(action: 'block' | 'review' | 'advise'): 'block' | 'review' | 'advise' {
   if (action === 'block') return 'review';
@@ -1340,7 +1424,12 @@ export function scan(ruleset: Ruleset, input: ScanInput): ScanResult {
         incompleteScan = true;
       }
       raw.push(
-        ...evaluateRule(rule, parsed, prDescription, ruleset.allowlist, ruleset.signatures),
+        ...gradeByContext(
+          rule,
+          evaluateRule(rule, parsed, prDescription, ruleset.allowlist, ruleset.signatures),
+          ruleset.context,
+          warnings,
+        ),
       );
     } catch {
       // A malformed rule must never crash the gate; record and continue — but a
@@ -1429,6 +1518,7 @@ export function scan(ruleset: Ruleset, input: ScanInput): ScanResult {
 
   // De-dupe identical (rule + masked evidence) findings.
   const findings: Finding[] = [];
+  const locations: FindingLocation[] = [];
   const seen = new Set<string>();
   let anyBlock = false;
   let anyReview = false;
@@ -1442,12 +1532,14 @@ export function scan(ruleset: Ruleset, input: ScanInput): ScanResult {
     if (verdict === 'fail') anyBlock = true;
     if (verdict === 'needs_review') anyReview = true;
 
-    findings.push({
-      rule_id: f.rule.id,
-      gdpr_article: f.rule.gdpr_article ?? [],
-      action: f.effectiveAction,
-      masked_evidence: f.maskedEvidence,
-    });
+    // A schema-2 framework's rule carries `articles`; the original GDPR stream keeps
+    // its `gdpr_article` field (and field order) exactly as before.
+    findings.push(
+      f.rule.articles
+        ? { rule_id: f.rule.id, articles: f.rule.articles, action: f.effectiveAction, masked_evidence: f.maskedEvidence }
+        : { rule_id: f.rule.id, gdpr_article: f.rule.gdpr_article ?? [], action: f.effectiveAction, masked_evidence: f.maskedEvidence },
+    );
+    locations.push({ file: f.file ?? null, line: f.file ? (f.line ?? null) : null });
   }
 
   let verdict: Verdict = anyBlock ? 'fail' : anyReview ? 'needs_review' : 'pass';
@@ -1479,5 +1571,7 @@ export function scan(ruleset: Ruleset, input: ScanInput): ScanResult {
   // thing, that the ruleset did not fully run.
   if (incompleteScan && verdict === 'pass') verdict = 'needs_review';
 
-  return { verdict, findings, warnings };
+  const result: ScanResult = { verdict, findings, warnings };
+  LOCATIONS.set(result, locations);
+  return result;
 }

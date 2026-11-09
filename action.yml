@@ -22,16 +22,62 @@ inputs:
     description: 'Token used to read the PR diff and publish the check run.'
     required: true
     default: ${{ github.token }}
+  pr-number:
+    description: >-
+      FEAT-09 backfill. Scan this pull request instead of the one in the event
+      payload — works for MERGED pull requests, so a ruleset can be evaluated
+      against history. Takes precedence over the event when both are present.
+      Leave empty for normal pull_request runs.
+    required: false
+    default: ''
+  publish-check-run:
+    description: >-
+      Set to 'false' to record the verdict WITHOUT publishing a GitHub check run.
+      Use this for a backfill: a check run is a claim about a commit's current
+      state, and stamping one onto an old merged commit rewrites history in the UI
+      and can re-open a settled required-check decision.
+    required: false
+    default: 'true'
   diff-cap-bytes:
     description: 'Max diff bytes to scan; larger diffs are truncated and floored to needs_review.'
     required: false
     default: '5000000'
+  fail-on:
+    description: >-
+      Comma-separated frameworks whose `fail` verdict fails this step, e.g.
+      'Data Compliance, EU AI Act'. Names are case-insensitive; 'none' never fails
+      the step. A framework not listed still publishes its own check run, but that
+      check is advisory (it never concludes `failure`). The default keeps today's
+      behaviour: only the Data Compliance (GDPR) gate can fail the step.
+    required: false
+    default: 'Data Compliance'
+    # Ignored when scan-mode is 'baseline'.
+  scan-mode:
+    description: >-
+      'pr' (default) scans a pull request's diff and publishes a verdict, as
+      always. 'baseline' builds the AI usage inventory instead: it walks every
+      tracked file of the checked-out repository (needs actions/checkout), runs
+      the EU AI Act baseline rules and posts COUNTS ONLY (per rule and AI
+      provider family) to PulseCheck. No pull request needed, no check run, no
+      verdict, fail-on ignored, and it never fails the step. Needs a token with
+      the inventory:write scope (plus ruleset:read). Any other value fails the step.
+    required: false
+    default: 'pr'
+  baseline-sample-paths:
+    description: >-
+      Baseline mode only. 'true' also sends up to 3 example file paths per
+      detection (paths only, never file content); PulseCheck stores them only
+      if your organization switched sample paths on. Default 'false': counts only.
+    required: false
+    default: 'false'
 
 outputs:
   verdict:
-    description: 'pass | fail | needs_review'
+    description: "pass | fail | needs_review (the Data Compliance gate's verdict)"
   findings-count:
-    description: 'Number of masked findings.'
+    description: "Number of masked findings from the Data Compliance gate."
+  verdicts:
+    description: 'JSON object mapping each scanned framework to its verdict.'
 
 runs:
   using: 'node20'

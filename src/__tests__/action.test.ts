@@ -2,9 +2,9 @@ import { describe, it, expect } from 'vitest';
 import { isValidIban, isValidCreditCard, isValidSvnr, isValidSteuerId, runValidators } from '../validators.js';
 import { maskEmail, maskFinding, maskGeneric } from '../mask.js';
 import { parseDiff, addedLines, removedLines, minusPlusPairs } from '../diff.js';
-import { buildSummary } from '../checkRun.js';
 import { scan } from '../scan.js';
 import { verdictToConclusion, buildSummary } from '../checkRun.js';
+import { resolvePrRef, shouldPublishCheckRun } from '../prContext.js';
 import type { Ruleset, Rule } from '../types.js';
 
 describe('validators', () => {
@@ -1254,5 +1254,73 @@ describe('checksum candidates — a date fragment is not an identifier', () => {
     // date. Here they do not, so the rule must still fire on the SVNR.
     expect(hits(`INSERT INTO p (svnr, at) VALUES ('${realSvnr()}', '${date}T${hour}:00:00Z');`))
       .toHaveLength(1);
+  });
+});
+
+/**
+ * FEAT-09 (docs/plans/rule-engine-findings.md §4) — scan a named pull request, so a
+ * ruleset can be evaluated against history instead of only against what merges next.
+ *
+ * Everything downstream already worked for merged pull requests; only the input was
+ * missing. These tests pin the two decisions that input forced.
+ */
+describe('FEAT-09 · pr-number backfill', () => {
+  describe('resolvePrRef', () => {
+    // Scenario: Normal pull request runs are unaffected
+    it('uses the event payload when no input is given', () => {
+      expect(resolvePrRef(41, '')).toEqual({ prNumber: 41, explicit: false });
+      expect(resolvePrRef(41, undefined)).toEqual({ prNumber: 41, explicit: false });
+    });
+
+    // Scenario: A merged pull request is scanned on demand
+    it('uses an explicit pr-number when supplied', () => {
+      expect(resolvePrRef(undefined, '22')).toEqual({ prNumber: 22, explicit: true });
+    });
+
+    it('prefers the explicit number over the event payload', () => {
+      // A dispatch backfill must work in a repo that also runs on pull_request.
+      // The two are never conflated: the head SHA differs, and a verdict recorded
+      // against the wrong commit is worse than no verdict at all.
+      expect(resolvePrRef(41, '22')).toEqual({ prNumber: 22, explicit: true });
+    });
+
+    it('tolerates surrounding whitespace from a dispatch field', () => {
+      expect(resolvePrRef(undefined, '  22  ')).toEqual({ prNumber: 22, explicit: true });
+    });
+
+    it('reports nothing to scan when neither source has a pull request', () => {
+      expect(resolvePrRef(undefined, '')).toEqual({ prNumber: null, explicit: false, reason: 'no-pr-context' });
+    });
+
+    it.each(['22abc', '-3', '0', 'abc', '1.5', '1e3', ' '])('rejects %j rather than guessing', input => {
+      const res = resolvePrRef(undefined, input);
+      // A typo in a hand-typed field must not silently scan a different PR.
+      expect(res.prNumber).toBeNull();
+    });
+
+    it('rejects a number too large to be a real pull request', () => {
+      expect(resolvePrRef(undefined, '999999999999999999999').prNumber).toBeNull();
+    });
+  });
+
+  describe('shouldPublishCheckRun', () => {
+    // Scenario: A backfill run does not publish check runs
+    it('suppresses publication when explicitly false', () => {
+      for (const v of ['false', 'FALSE', ' no ', '0']) {
+        expect(shouldPublishCheckRun(v)).toBe(false);
+      }
+    });
+
+    it('publishes by default, so existing workflows are untouched', () => {
+      for (const v of ['', undefined, 'true', 'yes', 'anything-else']) {
+        expect(shouldPublishCheckRun(v)).toBe(true);
+      }
+    });
+
+    it('does not suppress publication merely because a number was given', () => {
+      // Scanning an OPEN pull request by number is a legitimate re-run whose check
+      // run is still wanted. Only the explicit flag turns publication off.
+      expect(shouldPublishCheckRun('')).toBe(true);
+    });
   });
 });

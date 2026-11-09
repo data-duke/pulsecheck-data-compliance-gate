@@ -1,33 +1,76 @@
 /**
  * Data Compliance Gate — GitHub Action entrypoint (a dumb sensor).
  *
- * Flow: read inputs → resolve PR context → fetch the diff → pull the active
- * ruleset from PulseCheck → scan locally → publish a check run → post the masked
- * verdict back. No rules are baked in; raw diff/PII never leave this runner.
+ * This file is the GitHub ADAPTER: read inputs → resolve the PR (and its head SHA)
+ * from the event or the API → hand over to the provider-neutral core (core.ts),
+ * which fetches the diff, pulls the rulesets from PulseCheck (one per framework),
+ * scans each locally, publishes a verdict per framework and posts the masked
+ * verdicts back. No rules are baked in; raw diff/PII never leave this runner.
  *
  * Policies:
  *  - No token  → inert: no scan, no check run, no post, exit 0.
  *  - Ruleset fetch fails (PulseCheck unreachable) → publish a `neutral` check +
  *    warning; never a silent pass, never a hard block (don't fail on an outage).
- *  - verdict 'fail' → publish `failure` AND fail the step (the block); 'pass' →
- *    success; 'needs_review' → neutral (advisory).
+ *  - verdict 'fail' in a framework `fail-on` lists → publish `failure` AND fail the
+ *    step (the block); 'pass' → success; 'needs_review' → neutral (advisory). A
+ *    framework `fail-on` does not list is advisory: its check never concludes
+ *    `failure`. The default `fail-on` is the original 'Data Compliance' stream.
+ *  - An old server (no multi-framework support) is handled transparently: its
+ *    single ruleset is the 'Data Compliance' stream.
+ *
+ * `scan-mode: baseline` (PR E, AI usage inventory) takes a different path before any of
+ * the above: no pull request, no check run, no verdict, `fail-on` ignored. It walks the
+ * checked-out tree and posts aggregate counts only (baselineRun.ts), and never fails the
+ * step. An invalid `scan-mode` value is the one thing that fails it, before anything runs.
  */
 import * as core from '@actions/core';
 import * as github from '@actions/github';
-import { fetchRuleset, RulesetFetchError } from './ruleset.js';
-import { scan } from './scan.js';
+import { parseSamplePaths, parseScanMode, runBaseline } from './baselineRun.js';
 import { publishCheckRun } from './checkRun.js';
-import { postResult } from './report.js';
-import type { ScanResult } from './types.js';
+import { runGate, type ProviderAdapter } from './core.js';
+import { parseFailOn } from './frameworks.js';
+import { gitCheckout } from './gitCheckout.js';
+import { resolvePrRef, shouldPublishCheckRun } from './prContext.js';
 
 const DEFAULT_URL = 'https://nmvlxonedqnejdevrchx.supabase.co';
 
 async function run(): Promise<void> {
+  const mode = parseScanMode(core.getInput('scan-mode'));
+  if ('error' in mode) {
+    core.setFailed(mode.error);
+    return;
+  }
+  if (mode.mode === 'baseline') return runBaselineMode();
+  return runPr();
+}
+
+/** `scan-mode: baseline`: inventory the checked-out tree. Never fails the step (see baselineRun.ts). */
+async function runBaselineMode(): Promise<void> {
+  const token = core.getInput('pulsecheck-token');
+  const url = core.getInput('pulsecheck-url') || DEFAULT_URL;
+  if (!token) {
+    core.info('No pulsecheck-token provided — Data Compliance Gate is inert (no baseline scan, nothing recorded).');
+    return;
+  }
+  const samplePaths = parseSamplePaths(core.getInput('baseline-sample-paths'));
+  if (samplePaths.warning) core.warning(samplePaths.warning);
+  const { owner, repo } = github.context.repo;
+  await runBaseline(
+    { url, token, repo: `${owner}/${repo}`, samplePaths: samplePaths.value, fallbackSha: github.context.sha },
+    gitCheckout(process.env.GITHUB_WORKSPACE || process.cwd()),
+    core,
+  );
+}
+
+/** `scan-mode: pr` (the default): the pull request gate, unchanged. */
+async function runPr(): Promise<void> {
   const token = core.getInput('pulsecheck-token');
   const url = core.getInput('pulsecheck-url') || DEFAULT_URL;
   const githubToken = core.getInput('github-token');
   const parsedCap = Number(core.getInput('diff-cap-bytes') || '5000000');
   const diffCap = Number.isFinite(parsedCap) && parsedCap > 0 ? parsedCap : 5000000;
+  const { failOn, unknown: unknownFailOn } = parseFailOn(core.getInput('fail-on'));
+  for (const name of unknownFailOn) core.warning(`fail-on: unknown framework "${name}" was ignored.`);
 
   // Inert without a token — the brain is server-side and auth-gated.
   if (!token) {
@@ -35,15 +78,22 @@ async function run(): Promise<void> {
     return;
   }
 
+  // FEAT-09 · an explicitly named pull request wins over the event payload, so a
+  // workflow_dispatch backfill works in a repo that also runs on pull_request.
   const pr = github.context.payload.pull_request;
-  if (!pr) {
-    core.info('No pull_request in the event payload — nothing to scan.');
+  const ref = resolvePrRef(pr?.number as number | undefined, core.getInput('pr-number'));
+  if (ref.reason === 'invalid-input') {
+    core.setFailed("pr-number must be a positive whole number (e.g. '22').");
     return;
   }
+  if (ref.prNumber === null) {
+    core.info('No pull_request in the event payload and no pr-number input — nothing to scan.');
+    return;
+  }
+
   const { owner, repo } = github.context.repo;
-  const prNumber = pr.number as number;
-  const headSha = (pr.head as { sha: string }).sha;
-  const prDescription = (pr.body as string | null) ?? '';
+  const prNumber = ref.prNumber;
+  const publishChecks = shouldPublishCheckRun(core.getInput('publish-check-run'));
 
   if (!githubToken) {
     core.setFailed('github-token is required to fetch the diff and publish the check run.');
@@ -51,95 +101,59 @@ async function run(): Promise<void> {
   }
   const octokit = github.getOctokit(githubToken);
 
-  // Fetch the unified diff via the API (no shelling out).
-  let diff = '';
-  let truncated = false;
-  try {
-    const res = await octokit.rest.pulls.get({
-      owner,
-      repo,
-      pull_number: prNumber,
-      mediaType: { format: 'diff' },
-    });
-    diff = res.data as unknown as string;
-    if (typeof diff === 'string' && diff.length > diffCap) {
-      diff = diff.slice(0, diffCap);
-      truncated = true;
+  // With an explicit number the event payload carries nothing about that PR, so its
+  // head SHA and body have to be fetched. A merged PR answers this endpoint exactly
+  // as an open one does, which is why the backfill needed no server-side change.
+  let headSha: string;
+  let prDescription: string;
+  if (ref.explicit) {
+    try {
+      const meta = await octokit.rest.pulls.get({ owner, repo, pull_number: prNumber });
+      headSha = meta.data.head.sha;
+      prDescription = meta.data.body ?? '';
+      if (meta.data.merged) {
+        core.info(`Pull request #${prNumber} is merged — scanning it as a backfill.`);
+      }
+    } catch (err) {
+      core.setFailed(`Could not read pull request #${prNumber}: ${(err as Error)?.message ?? err}`);
+      return;
     }
-  } catch (err) {
-    // Inability to read the diff is a "cannot scan" case, like a PulseCheck
-    // outage: report needs_review/neutral rather than hard-failing the merge.
-    const reason = (err as Error)?.message ?? String(err);
-    core.warning(`Could not fetch the PR diff (${reason}). Reporting needs_review.`);
-    await safePublish(octokit, owner, repo, headSha, {
-      verdict: 'needs_review',
-      findings: [],
-      warnings: [`Diff unavailable: ${reason}`],
-    });
-    core.setOutput('verdict', 'needs_review');
-    return;
+  } else {
+    headSha = (pr!.head as { sha: string }).sha;
+    prDescription = (pr!.body as string | null) ?? '';
   }
 
-  // Pull the active ruleset. A fetch failure is a transient/outage case: emit a
-  // neutral check + warning, never a silent pass and never a hard block.
-  let ruleset;
-  try {
-    ruleset = await fetchRuleset(url, token);
-  } catch (err) {
-    const reason = err instanceof RulesetFetchError ? err.message : String(err);
-    core.warning(`Could not reach PulseCheck to fetch the ruleset (${reason}). Reporting needs_review.`);
-    const degraded: ScanResult = {
-      verdict: 'needs_review',
-      findings: [],
-      warnings: [`PulseCheck unreachable: ${reason}`],
-    };
-    await safePublish(octokit, owner, repo, headSha, degraded);
-    core.setOutput('verdict', 'needs_review');
-    return; // do not fail the pipeline on a PulseCheck outage
-  }
+  // The two provider-specific parts: how to read the diff (via the API, no shelling
+  // out) and how to show a verdict (a check run). Everything else is the core.
+  const adapter: ProviderAdapter = {
+    async fetchDiff() {
+      const res = await octokit.rest.pulls.get({
+        owner,
+        repo,
+        pull_number: prNumber,
+        mediaType: { format: 'diff' },
+      });
+      return res.data as unknown as string;
+    },
+    publishVerdict: (result, framework, advisory) =>
+      publishCheckRun(octokit as never, { owner, repo, headSha, result, framework, advisory }),
+  };
 
-  // Scan locally and publish.
-  const result = scan(ruleset, { diff, prDescription, truncated });
-  const conclusion = await safePublish(octokit, owner, repo, headSha, result);
-
-  // Post the masked verdict back (best-effort — never blocks, never leaks).
-  const post = await postResult(url, token, {
-    repo: `${owner}/${repo}`,
-    pr_number: prNumber,
-    commit_sha: headSha,
-    ruleset_version: ruleset.ruleset_version,
-    ruleset_hash: ruleset.ruleset_hash,
-    verdict: result.verdict,
-    findings: result.findings,
-  });
-  if (!post.ok) core.warning(`Could not record the verdict with PulseCheck: ${post.error}`);
-
-  core.setOutput('verdict', result.verdict);
-  core.setOutput('findings-count', String(result.findings.length));
-  for (const w of result.warnings) core.warning(w);
-
-  core.info(`Data Compliance Gate: ${result.verdict} (check run conclusion: ${conclusion}).`);
-
-  // A blocking verdict fails the step too, so a job-level required check blocks
-  // the merge even when the check run itself is not the configured gate.
-  if (result.verdict === 'fail') {
-    core.setFailed(`Data Compliance Gate failed: ${result.findings.filter((f) => f.action === 'block').length} blocking finding(s).`);
-  }
-}
-
-async function safePublish(
-  octokit: ReturnType<typeof github.getOctokit>,
-  owner: string,
-  repo: string,
-  headSha: string,
-  result: ScanResult,
-): Promise<string> {
-  try {
-    return await publishCheckRun(octokit as never, { owner, repo, headSha, result });
-  } catch (err) {
-    core.warning(`Could not publish the check run: ${(err as Error)?.message ?? err}`);
-    return 'neutral';
-  }
+  await runGate(
+    {
+      url,
+      token,
+      failOn,
+      diffCap,
+      publishChecks,
+      repo: `${owner}/${repo}`,
+      prNumber,
+      headSha,
+      prDescription,
+    },
+    adapter,
+    core,
+  );
 }
 
 run().catch((err) => {

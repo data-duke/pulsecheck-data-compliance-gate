@@ -6,6 +6,9 @@
  * without updating the PulseCheck edge-function contract in lock-step.
  */
 
+import type { FrameworkId } from './frameworks.js';
+import type { GateProvider } from './provider.js';
+
 export type RuleAction = 'block' | 'review' | 'advise';
 export type RuleTier = 1 | 2 | 3;
 
@@ -51,17 +54,37 @@ export interface DetectSpec {
   exclude_paths?: string[];
   /** Currently only the literal "synthetic" allowlist mode is supported. */
   allowlist?: 'synthetic';
+  /**
+   * Grading by the registry context (capability `context`). The first entry whose every `when` key equals the
+   * context value applies; it can only LOWER a finding's action. Served only with `requires_caps: ['context']`.
+   */
+  applies_when?: AppliesWhen[];
   /** Human-readable masking hint, e.g. "IBAN-pattern". */
   mask: string;
+}
+
+export interface AppliesWhen {
+  when: Record<string, boolean>;
+  action: 'review' | 'advise';
 }
 
 export interface Rule {
   id: string;
   name: string;
-  gdpr_article: string[];
+  /** The original GDPR stream's article references. Absent on a schema-2 framework's rules. */
+  gdpr_article?: string[];
+  /** Schema-2 frameworks' article references ("may be relevant to"). */
+  articles?: string[];
+  /** What a hit may affect: the AI system's assessment, specific controls, or both. */
+  relevance?: Array<'assessment' | 'control'>;
   action: RuleAction;
   tier: RuleTier;
   detect: DetectSpec;
+  /**
+   * PR E: set by ci-ruleset on the EU AI Act rules a baseline scan (`scan-mode: baseline`) runs. A PR scan ignores
+   * it; a baseline scan runs a rule only when this is literally `true` AND its id is in BASELINE_RULE_IDS.
+   */
+  baseline?: boolean;
 }
 
 export interface AllowlistSpec {
@@ -94,13 +117,29 @@ export interface Ruleset {
   rules: Rule[];
   allowlist: AllowlistSpec;
   signatures: SignaturesSpec;
+  /** Registry context served with a schema-2 ruleset when the Action announced `context`. Never part of ruleset_hash. */
+  context?: Record<string, unknown>;
+  /** SHA-256 of the canonical context, echoed back unchanged with the verdict. */
+  context_hash?: string;
+}
+
+/** One framework's ruleset, as served by ci-ruleset. A legacy server's single ruleset is read as 'Data Compliance'. */
+export interface FrameworkRuleset extends Ruleset {
+  framework: FrameworkId;
+  /** Rules the server withheld because this Action did not announce a capability they need. */
+  dropped_rules?: Array<{ id: string; missing_caps: string[] }>;
+  /** True when the server sent a context (or hash) this Action refused as malformed: graded without it, not posted. */
+  context_rejected?: boolean;
 }
 
 export type Verdict = 'pass' | 'fail' | 'needs_review';
 
 export interface Finding {
   rule_id: string;
-  gdpr_article: string[];
+  /** Present on the original GDPR stream's findings. */
+  gdpr_article?: string[];
+  /** Present on a schema-2 framework's findings, instead of `gdpr_article`. */
+  articles?: string[];
   action: string;
   masked_evidence: string;
 }
@@ -120,4 +159,25 @@ export interface ScanResultPayload {
   ruleset_hash: string;
   verdict: Verdict;
   findings: Finding[];
+}
+
+/** One framework's verdict inside a schema-2 post. */
+export interface FrameworkResultPayload {
+  framework: FrameworkId;
+  ruleset_version: number;
+  ruleset_hash: string;
+  verdict: Verdict;
+  findings: Finding[];
+  /** Echoed unchanged from the ruleset, both or neither (ci-scan-result recomputes and compares the hash). */
+  context?: Record<string, unknown>;
+  context_hash?: string;
+}
+
+/** The multi-framework body of ci-scan-result. */
+export interface ScanResultPayloadV2 {
+  repo: string;
+  pr_number: number;
+  commit_sha: string;
+  provider: GateProvider;
+  results: FrameworkResultPayload[];
 }

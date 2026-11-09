@@ -8,7 +8,8 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "build": "ncc build src/index.ts -o dist --license licenses.txt",
-    "test": "vitest run"
+    "test": "vitest run",
+    "build:cli": "ncc build src/cliMain.ts -o cli/dist --license licenses.txt && node cli/postbuild.mjs"
   },
   "dependencies": {
     "@actions/core": "^3.0.1",
